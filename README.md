@@ -26,7 +26,7 @@ CWM KEDA external scaler for scaling workers.
 **NOTE**: `KUBECONFIG` is the path of the config file to connect to the cluster,
 if not provided, the config of the cluster will be fetched and used.
 
-### Local Configuration: Metadata in ScaledObject (ScaledObjectRef)
+### Local Configuration: Metadata in ScaledObject
 
 Here is the generic YAML format of a ScaledObject:
 
@@ -73,7 +73,7 @@ The following table lists the supported local configuration:
 
 **NOTE**: The `deploymentNames` may be a comma-separated list of names.
 
-Supported metric names for **scaleMetricName**:
+Supported options for `scaleMetricName`:
 
 - `bytes_in`
 - `bytes_out`
