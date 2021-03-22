@@ -14,10 +14,8 @@ import (
 	_ "github.com/go-redis/redis/v8"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
-)
-
-const (
-	grpcAddress string = "0.0.0.0:50051"
+	_ "google.golang.org/grpc/codes"
+	_ "google.golang.org/grpc/status"
 )
 
 // Global configuration
@@ -109,9 +107,13 @@ type externalScalerServer struct{}
 func (s *externalScalerServer) IsActive(ctx context.Context, in *pb.ScaledObjectRef) (*pb.IsActiveResponse, error) {
 	log.Println(">> IsActive")
 
-	out := &pb.IsActiveResponse{}
+	// cfg := getLocalConfig(in)
 
-	return out, nil
+	// Is active - will be based on isActiveTtlSeconds and LAST_UPDATE_PREFIX_TEMPLATE
+
+	return &pb.IsActiveResponse{
+		Result: true,
+	}, nil
 }
 
 func (s *externalScalerServer) StreamIsActive(in *pb.ScaledObjectRef, stream pb.ExternalScaler_StreamIsActiveServer) error {
@@ -123,17 +125,23 @@ func (s *externalScalerServer) StreamIsActive(in *pb.ScaledObjectRef, stream pb.
 func (s *externalScalerServer) GetMetricSpec(ctx context.Context, in *pb.ScaledObjectRef) (*pb.GetMetricSpecResponse, error) {
 	log.Println(">> GetMetricSpec")
 
-	out := &pb.GetMetricSpecResponse{}
-
-	return out, nil
+	return &pb.GetMetricSpecResponse{
+		MetricSpecs: []*pb.MetricSpec{{
+			MetricName: "", // scaleMetricName
+			TargetSize: 10, // targetValue
+		}},
+	}, nil
 }
 
 func (s *externalScalerServer) GetMetrics(ctx context.Context, in *pb.GetMetricsRequest) (*pb.GetMetricsResponse, error) {
 	log.Println(">> GetMetrics")
 
-	out := &pb.GetMetricsResponse{}
-
-	return out, nil
+	return &pb.GetMetricsResponse{
+		MetricValues: []*pb.MetricValue{{
+			MetricName:  "", // scaleMetricName
+			MetricValue: 10, // scaleMetricValue
+		}},
+	}, nil
 }
 
 func (s *externalScalerServer) Close(ctx context.Context, scaledObjectRef *pb.ScaledObjectRef) (*empty.Empty, error) {
@@ -146,6 +154,7 @@ func (s *externalScalerServer) Close(ctx context.Context, scaledObjectRef *pb.Sc
 func main() {
 	log.Println(">> starting external scaler")
 
+	grpcAddress := "0.0.0.0:50051"
 	listener, err := net.Listen("tcp", grpcAddress)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
