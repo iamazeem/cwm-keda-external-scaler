@@ -9,22 +9,22 @@
 
 ## Overview
 
-CWM KEDA external scaler for scaling workers
+CWM KEDA external scaler for scaling workers.
 
 ## Configuration
 
 ### Global Configuration: Environment Variables
 
-| Environment Variable          | Description                           |
-|:------------------------------|:--------------------------------------|
-| REDIS_HOST                    | ip/host of the Redis metrics server   |
-| REDIS_PORT                    | port of the Redis metrics server      |
-| LAST_UPDATE_PREFIX_TEMPLATE   | timestamp of last update              |
-| METRICS_PREFIX_TEMPLATE       | prefix to get the metrics from        |
-| KUBECONFIG                    | (optional) path to KUBECONFIG file    |
+| Environment Variable            | Description                           |
+|:--------------------------------|:--------------------------------------|
+| `REDIS_HOST`                    | ip/host of the Redis metrics server   |
+| `REDIS_PORT`                    | port of the Redis metrics server      |
+| `LAST_UPDATE_PREFIX_TEMPLATE`   | timestamp of last update              |
+| `METRICS_PREFIX_TEMPLATE`       | prefix to get the metrics from        |
+| `KUBECONFIG`                    | (optional) path to KUBECONFIG file    |
 
-**NOTE**: KUBECONFIG is the path to config file to connect to the clsuter, if
-not provided, the cluster config will be used.
+**NOTE**: `KUBECONFIG` is the path of the config file to connect to the cluster,
+if not provided, the config of the cluster will be fetched and used.
 
 ### Local Configuration: Metadata in ScaledObject (ScaledObjectRef)
 
@@ -47,7 +47,7 @@ spec:
         key2: <value2>
 ```
 
-The local configuration will be under:
+The local configuration will be under `metadata`:
 
 ```yaml
 # ...
@@ -59,31 +59,30 @@ spec:
         # <<< local confiugration >>>
 ```
 
-Following table lists the supported local configuration:
+The following table lists the supported local configuration:
 
 | Configuration (Key)           | Description                           |
 |:------------------------------|:--------------------------------------|
-| deploymentid                  | value to replace in the prefix templates |
-| isActiveTtlSeconds            | seconds since last update to consider the workload as active |
-| scaleMetricName               | metric for scaling (listed below)     |
-| scalePeriodSeconds            | retention time for the metric value   |
-| namespaceName                 | namespace to get the number of pods   |
-| deploymentNames               | deployment to get the number of pods  |
-| targetValue                   | target value reported by the autoscaler |
+| `deploymentid`                  | value to replace in the prefix templates |
+| `isActiveTtlSeconds`            | seconds since last update to consider the workload as active |
+| `scaleMetricName`               | metric for scaling (listed below)     |
+| `scalePeriodSeconds`            | retention time for the metric value   |
+| `namespaceName`                 | namespace to get the number of pods   |
+| `deploymentNames`               | list of the deployment names to get the number of pods |
+| `targetValue`                   | target value reported by the autoscaler |
 
-**NOTE**: The **namespaceName** has precedence over **deploymentNames** if both
-are configured. Otherwise, the one configured will be used.
+**NOTE**: The `deploymentNames` may be a comma-separated list of names.
 
 Supported metric names for **scaleMetricName**:
 
-- bytes_in
-- bytes_out
-- num_requests_in
-- num_requests_out
-- num_requests_misc
-- bytes_total (= bytes_in + bytes_out)
-- num_requests_in_out (= num_requests_in + num_requests_out)
-- num_requests_total (= num_requests_in + num_requests_out + num_requests_misc)
+- `bytes_in`
+- `bytes_out`
+- `num_requests_in`
+- `num_requests_out`
+- `num_requests_misc`
+- `bytes_total` (`bytes_in` + `bytes_out`)
+- `num_requests_in_out` (`num_requests_in` + `num_requests_out`)
+- `num_requests_total` (`num_requests_in` + `num_requests_out` + `num_requests_misc`)
 
 ## Contribute
 
