@@ -14,7 +14,10 @@ import (
 	_ "github.com/go-redis/redis/v8"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
+)
+
+const (
+	grpcAddress string = "0.0.0.0:50051"
 )
 
 // Global configuration
@@ -94,14 +97,14 @@ func getLocalConfig(scaledObject *pb.ScaledObjectRef) *localConfig {
 	targetValue, _ := strconv.Atoi(getScalerMetadata(metadata, "targetValue", "10"))
 	cfg.targetValue = targetValue
 
+	log.Println(cfg.deploymentid)
+
 	return cfg
 }
 
 // External Scaler
 
-type externalScalerServer struct {
-	scaledObjectRef map[string][]*pb.ScaledObjectRef
-}
+type externalScalerServer struct{}
 
 // IsActive
 func (s *externalScalerServer) IsActive(ctx context.Context, in *pb.ScaledObjectRef) (*pb.IsActiveResponse, error) {
@@ -146,16 +149,18 @@ func (s *externalScalerServer) Close(ctx context.Context, scaledObjectRef *pb.Sc
 }
 
 func main() {
-	log.Println(">> Starting external scaler")
+	log.Println(">> starting external scaler")
 
-	listener, err := net.Listen("tcp", "0.0.0.0:50051")
+	listener, err := net.Listen("tcp", grpcAddress)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	reflection.Register(grpcServer)
+	log.Println(">> gRPC server started listening on %v", grpcAddress)
+
+	grpcServer := grpc.NewServer()
 	pb.RegisterExternalScalerServer(grpcServer, &externalScalerServer{})
-	grpcServer.Serve(listener)
+	if err := grpcServer.Serve(listener); err != nil {
+		log.Fatal(err)
+	}
 }
