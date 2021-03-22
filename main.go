@@ -106,7 +106,6 @@ func getLocalConfig(scaledObject *pb.ScaledObjectRef) *localConfig {
 
 type externalScalerServer struct{}
 
-// IsActive
 func (s *externalScalerServer) IsActive(ctx context.Context, in *pb.ScaledObjectRef) (*pb.IsActiveResponse, error) {
 	log.Println(">> IsActive")
 
@@ -115,7 +114,12 @@ func (s *externalScalerServer) IsActive(ctx context.Context, in *pb.ScaledObject
 	return out, nil
 }
 
-// GetMetricSpec
+func (s *externalScalerServer) StreamIsActive(in *pb.ScaledObjectRef, stream pb.ExternalScaler_StreamIsActiveServer) error {
+	log.Println(">> StreamIsActive")
+
+	return nil
+}
+
 func (s *externalScalerServer) GetMetricSpec(ctx context.Context, in *pb.ScaledObjectRef) (*pb.GetMetricSpecResponse, error) {
 	log.Println(">> GetMetricSpec")
 
@@ -124,14 +128,6 @@ func (s *externalScalerServer) GetMetricSpec(ctx context.Context, in *pb.ScaledO
 	return out, nil
 }
 
-// StreamIsActive
-func (s *externalScalerServer) StreamIsActive(in *pb.ScaledObjectRef, stream pb.ExternalScaler_StreamIsActiveServer) error {
-	log.Println(">> StreamIsActive")
-
-	return nil
-}
-
-// GetMetrics
 func (s *externalScalerServer) GetMetrics(ctx context.Context, in *pb.GetMetricsRequest) (*pb.GetMetricsResponse, error) {
 	log.Println(">> GetMetrics")
 
@@ -140,7 +136,6 @@ func (s *externalScalerServer) GetMetrics(ctx context.Context, in *pb.GetMetrics
 	return out, nil
 }
 
-// Close
 func (s *externalScalerServer) Close(ctx context.Context, scaledObjectRef *pb.ScaledObjectRef) (*empty.Empty, error) {
 	log.Println(">> Close")
 
