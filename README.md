@@ -63,13 +63,13 @@ The following table lists the supported local configuration:
 
 | Configuration (Key)           | Description                           |
 |:------------------------------|:--------------------------------------|
-| `deploymentid`                  | value to replace in the prefix templates |
-| `isActiveTtlSeconds`            | seconds since last update to consider the workload as active |
-| `scaleMetricName`               | metric for scaling (listed below)     |
-| `scalePeriodSeconds`            | retention time for the metric value   |
-| `namespaceName`                 | namespace to get the number of pods   |
-| `deploymentNames`               | list of the deployment names to get the number of pods |
-| `targetValue`                   | target value reported by the autoscaler |
+| `deploymentid`                | value to replace in the prefix templates |
+| `isActiveTtlSeconds`          | seconds since last update to consider the workload as active |
+| `scaleMetricName`             | metric for scaling (listed below)     |
+| `scalePeriodSeconds`          | retention time for the metric value   |
+| `namespaceName`               | namespace to get the number of pods   |
+| `deploymentNames`             | list of the deployment names to get the number of pods |
+| `targetValue`                 | target value reported by the autoscaler |
 
 **NOTE**: The `deploymentNames` may be a comma-separated list of names.
 
@@ -83,6 +83,73 @@ Supported options for `scaleMetricName`:
 - `bytes_total` (`bytes_in` + `bytes_out`)
 - `num_requests_in_out` (`num_requests_in` + `num_requests_out`)
 - `num_requests_total` (`num_requests_in` + `num_requests_out` + `num_requests_misc`)
+
+### Sample Configuration
+
+Here's the
+[configuration](https://keda.sh/docs/2.1/concepts/scaling-deployments/#scaledobject-spec)
+format of a `ScaledObject`:
+
+```yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {scaled-object-name}
+spec:
+  scaleTargetRef:
+    apiVersion:    {api-version-of-target-resource}  # Optional. Default: apps/v1
+    kind:          {kind-of-target-resource}         # Optional. Default: Deployment
+    name:          {name-of-target-resource}         # Mandatory. Must be in the same namespace as the ScaledObject
+    envSourceContainerName: {container-name}         # Optional. Default: .spec.template.spec.containers[0]
+  pollingInterval: 30                                # Optional. Default: 30 seconds
+  cooldownPeriod:  300                               # Optional. Default: 300 seconds
+  minReplicaCount: 0                                 # Optional. Default: 0
+  maxReplicaCount: 100                               # Optional. Default: 100
+  advanced:                                          # Optional. Section to specify advanced options
+    restoreToOriginalReplicaCount: true/false        # Optional. Default: false
+    horizontalPodAutoscalerConfig:                   # Optional. Section to specify HPA related options
+      behavior:                                      # Optional. Use to modify HPA's scaling behavior
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 15
+  triggers:
+  # {list of triggers to activate scaling of the target resource}
+```
+
+Assuming that the global configuration via environment variables has properly
+been set, our external scaler (`cwm-keda-external-scaler`) can be configured
+under `triggers` like this:
+
+```yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {scaled-object-name}
+spec:
+  scaleTargetRef:
+    apiVersion:    {api-version-of-target-resource}
+    kind:          {kind-of-target-resource}
+    name:          {name-of-target-resource}
+    envSourceContainerName: {container-name}
+  pollingInterval: 30
+  cooldownPeriod:  300
+  minReplicaCount: 0
+  maxReplicaCount: 100
+  triggers:
+    - type: external
+      metadata:
+        scalerAddress:      {host:port}
+        deploymentid:       {deployment-id}
+        isActiveTtlSeconds: {seconds}
+        scaleMetricName:    {supported-metric-name}
+        scalePeriodSeconds: {seconds}
+        namespaceName:      {namespace-name}
+        deploymentNames:    {deployment1, deployment2, ...}
+        targetValue:        {target-value}
+```
 
 ## Contribute
 
