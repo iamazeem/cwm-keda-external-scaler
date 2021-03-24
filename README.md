@@ -145,6 +145,18 @@ spec:
         targetValue:        {target-value}
 ```
 
+## Testing
+
+### Create ClusterRoleBinding for ClusterRole for querying pods information
+
+```shell
+# syntax
+kubectl create clusterrolebinding <name> --clusterrole=view --serviceaccount=<namespace>:<name>
+
+# example
+kubectl create clusterrolebinding external-scaler-ns-view --clusterrole=view --serviceaccount=external-scaler-ns:default
+```
+
 ## Contribute
 
 - Fork the project.
