@@ -127,17 +127,11 @@ under `triggers` like this:
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: {scaled-object-name}
+  name:                     {scaled-object-name}
 spec:
   scaleTargetRef:
-    apiVersion:    {api-version-of-target-resource}
-    kind:          {kind-of-target-resource}
-    name:          {name-of-target-resource}
-    envSourceContainerName: {container-name}
-  pollingInterval: 30
-  cooldownPeriod:  300
-  minReplicaCount: 0
-  maxReplicaCount: 100
+    name:                   {name-of-target-resource}
+  pollingInterval: 10
   triggers:
     - type: external
       metadata:
