@@ -10,12 +10,15 @@ import (
 	"strings"
 
 	pb "github.com/iamAzeem/cwm-keda-external-scaler/externalscaler"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	_ "github.com/go-redis/redis/v8"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
-	_ "google.golang.org/grpc/codes"
-	_ "google.golang.org/grpc/status"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Global configuration
@@ -100,6 +103,62 @@ func getLocalConfig(scaledObject *pb.ScaledObjectRef) *localConfig {
 	return cfg
 }
 
+func getNoOfPods(namespaceName, deploymentNames string) (int, error) {
+	log.Println(">> getNoOfPods")
+
+	// TODO: custom configuration file via `KUBECONFIG` environment variable
+
+	log.Println("getting in-cluster configuration")
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return -1, status.Error(codes.Internal, err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return -1, status.Error(codes.Internal, err.Error())
+	}
+
+	log.Printf("getting deployments in '%v' namespace", namespaceName)
+
+	deploymentList, err := clientset.AppsV1().Deployments(namespaceName).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return -1, status.Error(codes.Internal, err.Error())
+	}
+
+	log.Printf("found %v deployments in '%v' namespace", len(deploymentList.Items), namespaceName)
+
+	podList, err := clientset.CoreV1().Pods(namespaceName).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return -1, status.Error(codes.Internal, err.Error())
+	}
+
+	log.Printf("found %v pods in namespace '%v'", len(podList.Items), namespaceName)
+
+	// count the total number of pods in the namespace
+	// depending on their deployment name's prefix
+	// if the comma-separated list of deployment names has been provided
+	// otherwise, return the total number of pods in the current namespace
+	pods := 0
+	if deploymentNames != "" {
+		for _, deploymentName := range strings.Split(deploymentNames, ",") {
+			for _, pod := range podList.Items {
+				if strings.HasPrefix(pod.GetName(), deploymentName) {
+					log.Printf("'%v' pod found in '%v' deployment", pod.GetName(), deploymentName)
+					pods++
+				}
+			}
+		}
+	} else {
+		pods = len(podList.Items)
+	}
+
+	log.Printf("<< getNoOfPods | pods: %v", pods)
+
+	return pods, nil
+}
+
 // External Scaler
 
 type externalScalerServer struct{}
@@ -117,8 +176,6 @@ func (s *externalScalerServer) IsActive(ctx context.Context, in *pb.ScaledObject
 }
 
 func (s *externalScalerServer) StreamIsActive(in *pb.ScaledObjectRef, stream pb.ExternalScaler_StreamIsActiveServer) error {
-	log.Println(">> StreamIsActive")
-
 	return nil
 }
 
@@ -160,7 +217,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	log.Println(">> gRPC server started listening on %v", grpcAddress)
+	log.Printf(">> gRPC server started listening on %v", grpcAddress)
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterExternalScalerServer(grpcServer, &externalScalerServer{})
