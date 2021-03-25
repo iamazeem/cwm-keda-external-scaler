@@ -12,7 +12,7 @@ import (
 	pb "github.com/iamAzeem/cwm-keda-external-scaler/externalscaler"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
 	_ "github.com/go-redis/redis/v8"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -32,9 +32,10 @@ type globalConfig struct {
 }
 
 func getEnv(key, defaultValue string) string {
-	if value := strings.Trim(os.Getenv(key), " "); value != "" {
+	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
 		return value
 	} else {
+		log.Printf("'%v' not found! returning default value '%v'", key, defaultValue)
 		return defaultValue
 	}
 }
@@ -106,11 +107,10 @@ func getLocalConfig(scaledObject *pb.ScaledObjectRef) *localConfig {
 func getNoOfPods(namespaceName, deploymentNames string) (int, error) {
 	log.Println(">> getNoOfPods")
 
-	// TODO: custom configuration file via `KUBECONFIG` environment variable
+	log.Println("creating kubernetes REST client")
 
-	log.Println("getting in-cluster configuration")
-
-	config, err := rest.InClusterConfig()
+	kubeconfig := getEnv("KUBECONFIG", "")
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		return -1, status.Error(codes.Internal, err.Error())
 	}
@@ -127,14 +127,14 @@ func getNoOfPods(namespaceName, deploymentNames string) (int, error) {
 		return -1, status.Error(codes.Internal, err.Error())
 	}
 
-	log.Printf("found %v deployments in '%v' namespace", len(deploymentList.Items), namespaceName)
+	log.Printf("found %v deployment(s) in '%v' namespace", len(deploymentList.Items), namespaceName)
 
 	podList, err := clientset.CoreV1().Pods(namespaceName).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return -1, status.Error(codes.Internal, err.Error())
 	}
 
-	log.Printf("found %v pods in namespace '%v'", len(podList.Items), namespaceName)
+	log.Printf("found %v pod(s) in '%v' namespace", len(podList.Items), namespaceName)
 
 	// count the total number of pods in the namespace
 	// depending on their deployment name's prefix
@@ -145,13 +145,13 @@ func getNoOfPods(namespaceName, deploymentNames string) (int, error) {
 		for _, deploymentName := range strings.Split(deploymentNames, ",") {
 			for _, pod := range podList.Items {
 				if strings.HasPrefix(pod.GetName(), strings.TrimSpace(deploymentName)) {
-					log.Printf("'%v' pod found in '%v' deployment", pod.GetName(), deploymentName)
+					log.Printf("found '%v' pod in '%v' deployment", pod.GetName(), deploymentName)
 					pods++
 				}
 			}
 		}
 
-		log.Printf("total %v pods found in '%v' deployment(s)", pods, deploymentNames)
+		log.Printf("total %v pod(s) found in '%v' deployment(s)", pods, deploymentNames)
 	} else {
 		log.Printf("invalid/empty list of deployement names! returing pods in '%v' namespace", namespaceName)
 
