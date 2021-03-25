@@ -141,16 +141,20 @@ func getNoOfPods(namespaceName, deploymentNames string) (int, error) {
 	// if the comma-separated list of deployment names has been provided
 	// otherwise, return the total number of pods in the current namespace
 	pods := 0
-	if deploymentNames != "" {
+	if deploymentNames = strings.TrimSpace(deploymentNames); deploymentNames != "" {
 		for _, deploymentName := range strings.Split(deploymentNames, ",") {
 			for _, pod := range podList.Items {
-				if strings.HasPrefix(pod.GetName(), deploymentName) {
+				if strings.HasPrefix(pod.GetName(), strings.TrimSpace(deploymentName)) {
 					log.Printf("'%v' pod found in '%v' deployment", pod.GetName(), deploymentName)
 					pods++
 				}
 			}
 		}
+
+		log.Printf("total %v pods found in '%v' deployment(s)", pods, deploymentNames)
 	} else {
+		log.Printf("invalid/empty list of deployement names! returing pods in '%v' namespace", namespaceName)
+
 		pods = len(podList.Items)
 	}
 
