@@ -23,16 +23,25 @@ import (
 
 // Global configuration
 
-type globalConfig struct {
-	redisHost                string
-	redisPort                string
-	lastUpdatePrefixTemplate string
-	metricsPrefixTemplate    string
-	kubeConfig               string
-}
+const (
+	// keys
+	keyRedisHost                = "REDIS_HOST"
+	keyRedisPort                = "REDIS_PORT"
+	keyLastUpdatePrefixTemplate = "LAST_UPDATE_PREFIX_TEMPLATE"
+	keyMetricsPrefixTemplate    = "METRICS_PREFIX_TEMPLATE"
+	keyKubeConfigPath           = "KUBECONFIG"
+
+	// default values
+	defaultRedisHost                = "0.0.0.0"
+	defaultRedisPort                = "6379"
+	defaultLastUpdatePrefixTemplate = "deploymentid:last_action"
+	defaultMetricsPrefixTemplate    = "deploymentid:minio-metrics"
+	defaultKubeConfigPath           = ""
+)
 
 func getEnv(key, defaultValue string) string {
 	key = strings.TrimSpace(key)
+	log.Printf("getting value from env variable: key = '%v', default = '%v'", key, defaultValue)
 	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
 		return value
 	} else {
@@ -41,30 +50,53 @@ func getEnv(key, defaultValue string) string {
 	}
 }
 
-func getGlobalConfig() *globalConfig {
-	return &globalConfig{
-		redisHost:                getEnv("REDIS_HOST", "0.0.0.0"),
-		redisPort:                getEnv("REDIS_PORT", "6379"),
-		lastUpdatePrefixTemplate: getEnv("LAST_UPDATE_PREFIX_TEMPLATE", "deploymentid:last_action"),
-		metricsPrefixTemplate:    getEnv("METRICS_PREFIX_TEMPLATE", "deploymentid:last_action"),
-		kubeConfig:               getEnv("KUBECONFIG", "~/.kube/config"),
+func getLastUpdatPrefix(metadata map[string]string) string {
+	lastUpdatePrefixTemplate := getEnv(keyLastUpdatePrefixTemplate, defaultLastUpdatePrefixTemplate)
+	deploymentid := getValueFromScalerMetadata(metadata, keyDeploymentId, defaultDeploymentId)
+	lastUpdatePrefix := strings.Replace(lastUpdatePrefixTemplate, keyDeploymentId, deploymentid, 1)
+	if lastUpdatePrefix == "" {
+		log.Printf("last update prefix is empty")
 	}
+
+	return lastUpdatePrefix
+}
+
+func getMetricsPrefix(metadata map[string]string) string {
+	metricsPrefixTemplate := getEnv(keyMetricsPrefixTemplate, defaultMetricsPrefixTemplate)
+	deploymentid := getValueFromScalerMetadata(metadata, keyDeploymentId, defaultDeploymentId)
+	metricsPrefix := strings.Replace(metricsPrefixTemplate, keyDeploymentId, deploymentid, 1)
+	if metricsPrefix == "" {
+		log.Println("metrics prefix is empty")
+	}
+
+	return metricsPrefix
 }
 
 // Local configuration
 
-type localConfig struct {
-	deploymentid       string
-	isActiveTtlSeconds int
-	scaleMetricName    string
-	scalePeriodSeconds int
-	namespaceName      string
-	deploymentNames    []string
-	targetValue        int
-}
+const (
+	// keys
+	keyDeploymentId       = "deploymentid"
+	keyIsActiveTtlSeconds = "isActiveTtlSeconds"
+	keyScaleMetricName    = "scaleMetricName"
+	keyScalePeriodSeconds = "scalePeriodSeconds"
+	keyNamespaceName      = "namespaceName"
+	keyDeploymentNames    = "deploymentNames"
+	keyTargetValue        = "targetValue"
 
-func getScalerMetadata(metadata map[string]string, key, defaultValue string) string {
+	// default values
+	defaultDeploymentId       = "deploymentid"
+	defaultIsActiveTtlSeconds = "600"
+	defualtScaleMetricName    = "bytes_out"
+	defaultScalePeriodSeconds = "600"
+	defaultNamespaceName      = "default"
+	defaultDeploymentNames    = ""
+	defaultTargetValue        = "10"
+)
+
+func getValueFromScalerMetadata(metadata map[string]string, key, defaultValue string) string {
 	key = strings.TrimSpace(key)
+	log.Printf("getting value from scaler metadata: key = '%v', default = '%v'", key, defaultValue)
 	if value, exists := metadata[key]; exists {
 		return strings.TrimSpace(value)
 	} else {
@@ -73,41 +105,9 @@ func getScalerMetadata(metadata map[string]string, key, defaultValue string) str
 	}
 }
 
-func getLocalConfig(scaledObject *pb.ScaledObjectRef) *localConfig {
-	metadata := scaledObject.ScalerMetadata
+// Cluster configuration
 
-	cfg := &localConfig{}
-	cfg.deploymentid = getScalerMetadata(metadata, "deploymentid", "deploymentid")
-
-	isActiveTtlSeconds, _ := strconv.Atoi(getScalerMetadata(metadata, "isActiveTtlSeconds", "300"))
-	cfg.isActiveTtlSeconds = isActiveTtlSeconds
-
-	cfg.scaleMetricName = getScalerMetadata(metadata, "scaleMetricName", "bytes_in")
-
-	scalePeriodSeconds, _ := strconv.Atoi(getScalerMetadata(metadata, "scalePeriodSeconds", "300"))
-	cfg.scalePeriodSeconds = scalePeriodSeconds
-
-	cfg.namespaceName = getScalerMetadata(metadata, "namespaceName", "default")
-
-	// handle comman-separated list of deployment names
-	deploymentNames := getScalerMetadata(metadata, "deploymentNames", "")
-	if deploymentNames != "" {
-		names := strings.Split(deploymentNames, ",")
-		for i, n := range names {
-			names[i] = strings.Trim(n, " ")
-		}
-		cfg.deploymentNames = names
-	}
-
-	targetValue, _ := strconv.Atoi(getScalerMetadata(metadata, "targetValue", "10"))
-	cfg.targetValue = targetValue
-
-	log.Println(cfg.deploymentid)
-
-	return cfg
-}
-
-func getNoOfPods(namespaceName, deploymentNames string) (int, error) {
+func getNoOfPods(metadata map[string]string) (int, error) {
 	log.Println(">> getNoOfPods")
 
 	log.Println("creating kubernetes REST client")
@@ -122,6 +122,8 @@ func getNoOfPods(namespaceName, deploymentNames string) (int, error) {
 	if err != nil {
 		return -1, status.Error(codes.Internal, err.Error())
 	}
+
+	namespaceName := getValueFromScalerMetadata(metadata, "namespaceName", defaultNamespaceName)
 
 	log.Printf("getting deployments in '%v' namespace", namespaceName)
 
@@ -143,6 +145,9 @@ func getNoOfPods(namespaceName, deploymentNames string) (int, error) {
 	// depending on their deployment name's prefix
 	// if the comma-separated list of deployment names has been provided
 	// otherwise, return the total number of pods in the current namespace
+
+	deploymentNames := getValueFromScalerMetadata(metadata, "deploymentNames", defaultDeploymentNames)
+
 	pods := 0
 	if deploymentNames = strings.TrimSpace(deploymentNames); deploymentNames != "" {
 		for _, deploymentName := range strings.Split(deploymentNames, ",") {
@@ -239,33 +244,36 @@ func getValueFromRedisServer(key string) (string, bool) {
 	return val, true
 }
 
+// Utility functions
+
 // External Scaler
 
 var (
-	lastMetricValue string    = ""
+	lastMetricValue int64     = 0
 	lastTimestamp   time.Time = time.Now()
 )
 
 type externalScalerServer struct{}
 
 func (s *externalScalerServer) IsActive(ctx context.Context, in *pb.ScaledObjectRef) (*pb.IsActiveResponse, error) {
-	log.Println(">> IsActive")
+	log.Println("IsAcive | checking active status")
 
 	// timestamp := time.Now()
 
-	lastUpdatePrefix := getEnv("LAST_UPDATE_PREFIX_TEMPLATE", "deploymentid:last_action")
-	deploymentid := getScalerMetadata(in.ScalerMetadata, "deploymentid", "deploymentid")
-	scaleMetricName := getScalerMetadata(in.ScalerMetadata, "scaleMetricName", "bytes_out")
+	_lastUpdatePrefix := getLastUpdatPrefix(in.ScalerMetadata)
+	metricsPrefix := getMetricsPrefix(in.ScalerMetadata)
 
-	key := lastUpdatePrefix + ":" + deploymentid + ":" + scaleMetricName
-	val, success := getValueFromRedisServer(key)
+	scaleMetricName := getValueFromScalerMetadata(in.ScalerMetadata, keyScaleMetricName, defualtScaleMetricName)
+
+	key := metricsPrefix + ":" + scaleMetricName
+	_val, success := getValueFromRedisServer(key)
 	if !success {
 		return nil, status.Errorf(codes.Internal, "could not get value from Redis server for '%v'", key)
 	}
 
-	lastMetricValue = val
+	// lastMetricValue = val
 
-	// isActiveTtlSeconds := getScalerMetadata(in.ScalerMetadata, "isActiveTtlSeconds", "600")
+	// isActiveTtlSeconds := getValueFromScalerMetadata(in.ScalerMetadata, "isActiveTtlSeconds", "600")
 
 	return &pb.IsActiveResponse{
 		Result: true,
@@ -276,33 +284,53 @@ func (s *externalScalerServer) StreamIsActive(in *pb.ScaledObjectRef, stream pb.
 	return nil
 }
 
-func (s *externalScalerServer) GetMetricSpec(ctx context.Context, in *pb.ScaledObjectRef) (*pb.GetMetricSpecResponse, error) {
-	log.Println(">> GetMetricSpec")
+func (s *externalScalerServer) GetMetricSpec(_ context.Context, in *pb.ScaledObjectRef) (*pb.GetMetricSpecResponse, error) {
+	log.Println("GetMetricSpec | getting metric spec")
+
+	scalerMetricName := getValueFromScalerMetadata(in.ScalerMetadata, keyScaleMetricName, defualtScaleMetricName)
+
+	targetValueStr := getValueFromScalerMetadata(in.ScalerMetadata, keyTargetValue, defaultTargetValue)
+	targetValue, err := strconv.ParseInt(targetValueStr, 10, 64)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyTargetValue, err.Error())
+	} else if targetValue < 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyTargetValue, targetValue)
+	}
 
 	return &pb.GetMetricSpecResponse{
 		MetricSpecs: []*pb.MetricSpec{{
-			MetricName: "", // scaleMetricName
-			TargetSize: 10, // targetValue
+			MetricName: scalerMetricName,
+			TargetSize: targetValue,
 		}},
 	}, nil
 }
 
-func (s *externalScalerServer) GetMetrics(ctx context.Context, in *pb.GetMetricsRequest) (*pb.GetMetricsResponse, error) {
-	log.Println(">> GetMetrics")
+func (s *externalScalerServer) GetMetrics(_ context.Context, in *pb.GetMetricsRequest) (*pb.GetMetricsResponse, error) {
+	log.Println("GetMetrics | getting metrics")
+
+	scaleMetricName := getValueFromScalerMetadata(in.ScaledObjectRef.ScalerMetadata, keyScaleMetricName, defualtScaleMetricName)
+	scaleMetricValueStr, isValidMetricValue := getValueFromRedisServer(scaleMetricName)
+	if !isValidMetricValue {
+		return nil, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValueStr)
+	}
+
+	scaleMetricValue, err := strconv.ParseInt(scaleMetricValueStr, 10, 64)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "invalid %v: %v => %v [%v]", keyScaleMetricName, scaleMetricName, scaleMetricValue, err.Error())
+	} else if scaleMetricValue < 0 {
+		return nil, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValue)
+	}
 
 	return &pb.GetMetricsResponse{
 		MetricValues: []*pb.MetricValue{{
-			MetricName:  "", // scaleMetricName
-			MetricValue: 10, // scaleMetricValue
+			MetricName:  in.MetricName,
+			MetricValue: scaleMetricValue,
 		}},
 	}, nil
 }
 
 func (s *externalScalerServer) Close(ctx context.Context, scaledObjectRef *pb.ScaledObjectRef) (*empty.Empty, error) {
-	log.Println(">> Close")
-
-	out := &empty.Empty{}
-	return out, nil
+	return &empty.Empty{}, nil
 }
 
 func main() {
