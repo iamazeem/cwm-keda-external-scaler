@@ -15,7 +15,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -173,28 +172,49 @@ func getNoOfPods(metadata map[string]string) (int, error) {
 
 // Redis
 
-func connectToRedisServer() *redis.Client {
+var (
+	rdb *redis.Client = nil
+)
+
+func connectToRedisServer() bool {
 	log.Printf("establishing connection with Redis server")
 
 	redisHost := getEnv("REDIS_HOST", "localhost")
 	redisPort := getEnv("REDIS_PORT", "6379")
 	address := redisHost + ":" + redisPort
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     address,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+	// check if the existing Redis server's address <host:port> changed
+	// close the existing connection and cleanup
+	// and try to connect with the new Redis server
+	if rdb != nil && address != rdb.Options().Addr {
+		log.Printf("address of Redis server changed from %v to %v", rdb.Options().Addr, address)
+		log.Printf("previous Redis connection will be closed and the new one will be established")
 
-	if !pingRedisServer(rdb) {
 		rdb.Close()
-		return nil
+		rdb = nil
 	}
 
-	return rdb
+	// create new Redis client if one does not exist already
+	if rdb == nil {
+		rdb = redis.NewClient(&redis.Options{
+			Addr:     address,
+			Password: "", // no password set
+			DB:       0,  // use default DB
+		})
+	}
+
+	if !pingRedisServer() {
+		rdb.Close()
+		rdb = nil
+		return false
+	}
+
+	log.Printf("successful connection with Redis server [%v]", address)
+
+	return true
 }
 
-func pingRedisServer(rdb *redis.Client) bool {
+func pingRedisServer() bool {
 	log.Println("pinging Redis server")
 
 	val, err := rdb.Ping(rdb.Context()).Result()
@@ -220,8 +240,7 @@ func pingRedisServer(rdb *redis.Client) bool {
 func getValueFromRedisServer(key string) (string, bool) {
 	log.Printf("getting value for '%v' key from Redis server", key)
 
-	rdb := connectToRedisServer()
-	if rdb == nil {
+	if !connectToRedisServer() {
 		log.Println("could not connect with Redis server")
 		return "", false
 	}
@@ -245,6 +264,45 @@ func getValueFromRedisServer(key string) (string, bool) {
 }
 
 // Utility functions
+
+func getMetricSpec(metadata map[string]string) (string, int64, error) {
+	log.Println("getting metric spec {metric name, target value}")
+
+	scaleMetricName := getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
+
+	targetValueStr := getValueFromScalerMetadata(metadata, keyTargetValue, defaultTargetValue)
+	targetValue, err := strconv.ParseInt(targetValueStr, 10, 64)
+	if err != nil {
+		return "", 0, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyTargetValue, err.Error())
+	} else if targetValue < 0 {
+		return "", 0, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyTargetValue, targetValue)
+	}
+
+	log.Printf("returning metric spec: { metric name: %v, target value: %v }", scaleMetricName, targetValue)
+
+	return scaleMetricName, targetValue, nil
+}
+
+func getMetrics(metadata map[string]string) (string, int64, error) {
+	log.Println("getting metrics {metric name, metric value}")
+
+	scaleMetricName := getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
+	scaleMetricValueStr, isValidMetricValue := getValueFromRedisServer(scaleMetricName)
+	if !isValidMetricValue {
+		return "", 0, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValueStr)
+	}
+
+	scaleMetricValue, err := strconv.ParseInt(scaleMetricValueStr, 10, 64)
+	if err != nil {
+		return "", 0, status.Errorf(codes.Internal, "invalid %v: %v => %v [%v]", keyScaleMetricName, scaleMetricName, scaleMetricValue, err.Error())
+	} else if scaleMetricValue < 0 {
+		return "", 0, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValue)
+	}
+
+	log.Printf("returning metrics: { metric name: %v, metric value: %v }", scaleMetricName, scaleMetricValue)
+
+	return scaleMetricName, scaleMetricValue, nil
+}
 
 // External Scaler
 
@@ -285,52 +343,31 @@ func (s *externalScalerServer) StreamIsActive(in *pb.ScaledObjectRef, stream pb.
 }
 
 func (s *externalScalerServer) GetMetricSpec(_ context.Context, in *pb.ScaledObjectRef) (*pb.GetMetricSpecResponse, error) {
-	log.Println("GetMetricSpec | getting metric spec")
-
-	scalerMetricName := getValueFromScalerMetadata(in.ScalerMetadata, keyScaleMetricName, defualtScaleMetricName)
-
-	targetValueStr := getValueFromScalerMetadata(in.ScalerMetadata, keyTargetValue, defaultTargetValue)
-	targetValue, err := strconv.ParseInt(targetValueStr, 10, 64)
+	metricName, targetValue, err := getMetricSpec(in.ScalerMetadata)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyTargetValue, err.Error())
-	} else if targetValue < 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyTargetValue, targetValue)
+		return nil, err
 	}
 
 	return &pb.GetMetricSpecResponse{
 		MetricSpecs: []*pb.MetricSpec{{
-			MetricName: scalerMetricName,
+			MetricName: metricName,
 			TargetSize: targetValue,
 		}},
 	}, nil
 }
 
 func (s *externalScalerServer) GetMetrics(_ context.Context, in *pb.GetMetricsRequest) (*pb.GetMetricsResponse, error) {
-	log.Println("GetMetrics | getting metrics")
-
-	scaleMetricName := getValueFromScalerMetadata(in.ScaledObjectRef.ScalerMetadata, keyScaleMetricName, defualtScaleMetricName)
-	scaleMetricValueStr, isValidMetricValue := getValueFromRedisServer(scaleMetricName)
-	if !isValidMetricValue {
-		return nil, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValueStr)
-	}
-
-	scaleMetricValue, err := strconv.ParseInt(scaleMetricValueStr, 10, 64)
+	metricName, metricValue, err := getMetrics(in.ScaledObjectRef.ScalerMetadata)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "invalid %v: %v => %v [%v]", keyScaleMetricName, scaleMetricName, scaleMetricValue, err.Error())
-	} else if scaleMetricValue < 0 {
-		return nil, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValue)
+		return nil, err
 	}
 
 	return &pb.GetMetricsResponse{
 		MetricValues: []*pb.MetricValue{{
-			MetricName:  in.MetricName,
-			MetricValue: scaleMetricValue,
+			MetricName:  metricName,
+			MetricValue: metricValue,
 		}},
 	}, nil
-}
-
-func (s *externalScalerServer) Close(ctx context.Context, scaledObjectRef *pb.ScaledObjectRef) (*empty.Empty, error) {
-	return &empty.Empty{}, nil
 }
 
 func main() {
