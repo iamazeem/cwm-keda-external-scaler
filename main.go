@@ -87,21 +87,22 @@ func getMetrics(metadata map[string]string) (metric, error) {
 
 type externalScalerServer struct{}
 
-func isActive(metadata map[string]string) error {
+func isActive(metadata map[string]string) (bool, error) {
 	log.Println("checking active status")
 
 	// isActiveTtlSecondsStr := getValueFromScalerMetadata(metadata, keyIsActiveTtlSeconds, defaultIsActiveTtlSeconds)
 
-	return nil
+	return true, nil
 }
 
 func (s *externalScalerServer) IsActive(_ context.Context, in *pb.ScaledObjectRef) (*pb.IsActiveResponse, error) {
-	if err := isActive(in.ScalerMetadata); err != nil {
+	result, err := isActive(in.ScalerMetadata)
+	if err != nil {
 		return nil, err
 	}
 
 	return &pb.IsActiveResponse{
-		Result: true,
+		Result: result,
 	}, nil
 }
 
