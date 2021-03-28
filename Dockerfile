@@ -7,8 +7,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY externalscaler/externalscaler.pb.go externalscaler/externalscaler.pb.go
-COPY main.go ./
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -o external-scaler main.go
+COPY *.go ./
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -o external-scaler
 
 FROM alpine:latest
 
