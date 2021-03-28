@@ -14,9 +14,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type metric struct {
+	name  string
+	value int64
+}
+
 // Utility functions
 
-func getMetricSpec(metadata map[string]string) (string, int64, error) {
+func getMetricSpec(metadata map[string]string) (metric, error) {
 	log.Println("getting metric spec {metric name, target value}")
 
 	scaleMetricName := getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
@@ -24,70 +29,76 @@ func getMetricSpec(metadata map[string]string) (string, int64, error) {
 	targetValueStr := getValueFromScalerMetadata(metadata, keyTargetValue, defaultTargetValue)
 	targetValue, err := strconv.ParseInt(targetValueStr, 10, 64)
 	if err != nil {
-		return "", 0, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyTargetValue, err.Error())
+		return metric{}, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyTargetValue, err.Error())
 	} else if targetValue < 0 {
-		return "", 0, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyTargetValue, targetValue)
+		return metric{}, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyTargetValue, targetValue)
 	}
 
 	log.Printf("returning metric spec: { metric name: %v, target value: %v }", scaleMetricName, targetValue)
 
-	return scaleMetricName, targetValue, nil
+	return metric{scaleMetricName, targetValue}, nil
 }
 
-func getMetricNameWithValue(metadata map[string]string) (string, int64, error) {
-	log.Println("getting metrics {metric name, metric value}")
+func getMetric(metadata map[string]string) (metric, error) {
+	log.Println("getting metric {name, value}")
 
 	scaleMetricName := getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
 	scaleMetricValueStr, isValidMetricValue := getValueFromRedisServer(scaleMetricName)
 	if !isValidMetricValue {
-		return "", 0, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValueStr)
+		return metric{}, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValueStr)
 	}
 
 	scaleMetricValue, err := strconv.ParseInt(scaleMetricValueStr, 10, 64)
 	if err != nil {
-		return "", 0, status.Errorf(codes.Internal, "invalid %v: %v => %v [%v]", keyScaleMetricName, scaleMetricName, scaleMetricValue, err.Error())
+		return metric{}, status.Errorf(codes.Internal, "invalid %v: %v => %v [%v]", keyScaleMetricName, scaleMetricName, scaleMetricValue, err.Error())
 	} else if scaleMetricValue < 0 {
-		return "", 0, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValue)
+		return metric{}, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValue)
 	}
 
 	log.Printf("returning metrics: { metric name: %v, metric value: %v }", scaleMetricName, scaleMetricValue)
 
-	return scaleMetricName, scaleMetricValue, nil
+	return metric{scaleMetricName, scaleMetricValue}, nil
 }
 
-func getMetrics(metadata map[string]string) (string, int64, error) {
-	return getMetricNameWithValue(metadata)
+func getMetrics(metadata map[string]string) (metric, error) {
+	metricData, err := cache.getOldestMetricData()
+	if err != nil {
+		return metric{}, err
+	}
+
+	oldMetricValue := metricData.metricValue
+
+	m, err := getMetric(metadata)
+	if err != nil {
+		return metric{}, err
+	}
+
+	noOfPods, err := getNoOfPods(metadata)
+	if err != nil {
+		return metric{}, err
+	}
+
+	metricValue := (m.value - oldMetricValue) / noOfPods
+
+	return metric{m.name, metricValue}, nil
 }
 
 // External Scaler
 
 type externalScalerServer struct{}
 
-func isActive(metadata map[string]string) (bool, error) {
+func isActive(metadata map[string]string) error {
 	log.Println("checking active status")
 
 	// isActiveTtlSecondsStr := getValueFromScalerMetadata(metadata, keyIsActiveTtlSeconds, defaultIsActiveTtlSeconds)
 
-	return true, nil
+	return nil
 }
 
 func (s *externalScalerServer) IsActive(_ context.Context, in *pb.ScaledObjectRef) (*pb.IsActiveResponse, error) {
-	log.Println("IsAcive | checking active status")
-
-	// _lastUpdatePrefix := getLastUpdatPrefix(in.ScalerMetadata)
-	// metricsPrefix := getMetricsPrefix(in.ScalerMetadata)
-
-	// scaleMetricName := getValueFromScalerMetadata(in.ScalerMetadata, keyScaleMetricName, defualtScaleMetricName)
-
-	// key := metricsPrefix + ":" + scaleMetricName
-	// _val, success := getValueFromRedisServer(key)
-	// if !success {
-	// 	return nil, status.Errorf(codes.Internal, "could not get value from Redis server for '%v'", key)
-	// }
-
-	// lastMetricValue = val
-
-	// isActiveTtlSeconds := getValueFromScalerMetadata(in.ScalerMetadata, "isActiveTtlSeconds", "600")
+	if err := isActive(in.ScalerMetadata); err != nil {
+		return nil, err
+	}
 
 	return &pb.IsActiveResponse{
 		Result: true,
@@ -99,29 +110,29 @@ func (s *externalScalerServer) StreamIsActive(in *pb.ScaledObjectRef, stream pb.
 }
 
 func (s *externalScalerServer) GetMetricSpec(_ context.Context, in *pb.ScaledObjectRef) (*pb.GetMetricSpecResponse, error) {
-	metricName, targetValue, err := getMetricSpec(in.ScalerMetadata)
+	m, err := getMetricSpec(in.ScalerMetadata)
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.GetMetricSpecResponse{
 		MetricSpecs: []*pb.MetricSpec{{
-			MetricName: metricName,
-			TargetSize: targetValue,
+			MetricName: m.name,
+			TargetSize: m.value,
 		}},
 	}, nil
 }
 
 func (s *externalScalerServer) GetMetrics(_ context.Context, in *pb.GetMetricsRequest) (*pb.GetMetricsResponse, error) {
-	metricName, metricValue, err := getMetrics(in.ScaledObjectRef.ScalerMetadata)
+	m, err := getMetrics(in.ScaledObjectRef.ScalerMetadata)
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.GetMetricsResponse{
 		MetricValues: []*pb.MetricValue{{
-			MetricName:  metricName,
-			MetricValue: metricValue,
+			MetricName:  m.name,
+			MetricValue: m.value,
 		}},
 	}, nil
 }

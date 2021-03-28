@@ -57,7 +57,7 @@ func getValueFromScalerMetadata(metadata map[string]string, key, defaultValue st
 	}
 }
 
-func getNoOfPods(metadata map[string]string) (int, error) {
+func getNoOfPods(metadata map[string]string) (int64, error) {
 	log.Println(">> getNoOfPods")
 
 	log.Println("creating kubernetes REST client")
@@ -98,7 +98,7 @@ func getNoOfPods(metadata map[string]string) (int, error) {
 
 	deploymentNames := getValueFromScalerMetadata(metadata, "deploymentNames", defaultDeploymentNames)
 
-	pods := 0
+	var pods int64 = 0
 	if deploymentNames = strings.TrimSpace(deploymentNames); deploymentNames != "" {
 		for _, deploymentName := range strings.Split(deploymentNames, ",") {
 			for _, pod := range podList.Items {
@@ -113,7 +113,7 @@ func getNoOfPods(metadata map[string]string) (int, error) {
 	} else {
 		log.Printf("invalid/empty list of deployement names! returing pods in '%v' namespace", namespaceName)
 
-		pods = len(podList.Items)
+		pods = int64(len(podList.Items))
 	}
 
 	log.Printf("<< getNoOfPods | pods: %v", pods)
