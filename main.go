@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 
 	pb "github.com/iamAzeem/cwm-keda-external-scaler/externalscaler"
 
@@ -20,6 +21,81 @@ type metric struct {
 }
 
 // Utility functions
+
+func getIsActiveTtlSeconds(metadata map[string]string) (int64, error) {
+	isActiveTtlSecondsStr := getValueFromScalerMetadata(metadata, keyIsActiveTtlSeconds, defaultIsActiveTtlSeconds)
+	isActiveTtlSeconds, err := strconv.ParseInt(isActiveTtlSecondsStr, 10, 64)
+	if err != nil {
+		return -1, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyIsActiveTtlSeconds, err.Error())
+	} else if isActiveTtlSeconds < 0 {
+		return -1, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyIsActiveTtlSeconds, isActiveTtlSeconds)
+	}
+
+	return isActiveTtlSeconds, nil
+}
+
+func getLastUpdateTime(metadata map[string]string) (time.Time, error) {
+	keyLastUpdate := getLastUpdatPrefix(metadata)
+	lastUpdateValue, isValidLastUpdateValue := getValueFromRedisServer(keyLastUpdate)
+	if !isValidLastUpdateValue {
+		return time.Time{}, status.Errorf(codes.Internal, "invalid value: %v => %v", keyLastUpdate, lastUpdateValue)
+	}
+
+	lastUpdateTime, err := time.Parse(time.RFC3339Nano, lastUpdateValue)
+	if err != nil {
+		return time.Time{}, status.Errorf(codes.Internal, "invalid value: %v => %v", keyLastUpdate, lastUpdateTime)
+	}
+
+	return lastUpdateTime, nil
+}
+
+func getScalePeriodSeconds(metadata map[string]string) (int64, error) {
+	scalePeriodSecondsStr := getValueFromScalerMetadata(metadata, keyScalePeriodSeconds, defaultScalePeriodSeconds)
+	scalePeriodSeconds, err := strconv.ParseInt(scalePeriodSecondsStr, 10, 64)
+	if err != nil {
+		return -1, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyIsActiveTtlSeconds, err.Error())
+	} else if scalePeriodSeconds < 0 {
+		return -1, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyScalePeriodSeconds, scalePeriodSeconds)
+	}
+
+	return scalePeriodSeconds, nil
+}
+
+func isActive(metadata map[string]string) (bool, error) {
+	log.Println("checking active status")
+
+	isActiveTtlSeconds, err := getIsActiveTtlSeconds(metadata)
+	if err != nil {
+		return false, err
+	}
+
+	lastUpdateTime, err := getLastUpdateTime(metadata)
+	if err != nil {
+		return false, err
+	}
+
+	// add metric value in cache
+	m, err := getMetric(metadata)
+	if err != nil {
+		return false, err
+	}
+
+	cache.append(m.value)
+
+	// purge metric values from cache older than scale period seconds ago
+	scalePeriodSeconds, err := getScalePeriodSeconds(metadata)
+	if err != nil {
+		return false, err
+	}
+
+	cache.purge(scalePeriodSeconds)
+
+	// determine activeness
+	active := int64(time.Since(lastUpdateTime).Seconds()) < isActiveTtlSeconds
+	log.Printf("isActive: %v", active)
+
+	return active, nil
+}
 
 func getMetricSpec(metadata map[string]string) (metric, error) {
 	log.Println("getting metric spec {metric name, target value}")
@@ -87,14 +163,6 @@ func getMetrics(metadata map[string]string) (metric, error) {
 
 type externalScalerServer struct{}
 
-func isActive(metadata map[string]string) (bool, error) {
-	log.Println("checking active status")
-
-	// isActiveTtlSecondsStr := getValueFromScalerMetadata(metadata, keyIsActiveTtlSeconds, defaultIsActiveTtlSeconds)
-
-	return true, nil
-}
-
 func (s *externalScalerServer) IsActive(_ context.Context, in *pb.ScaledObjectRef) (*pb.IsActiveResponse, error) {
 	result, err := isActive(in.ScalerMetadata)
 	if err != nil {
@@ -137,6 +205,8 @@ func (s *externalScalerServer) GetMetrics(_ context.Context, in *pb.GetMetricsRe
 		}},
 	}, nil
 }
+
+// main function
 
 func main() {
 	log.SetOutput(os.Stdout)

@@ -145,6 +145,12 @@ spec:
         targetValue:        {target-value}
 ```
 
+## Build Docker Image
+
+```shell
+docker build -t cwm-keda-external-scaler:latest .
+```
+
 ## Testing
 
 ### Create ClusterRoleBinding for ClusterRole for querying pods information
@@ -156,6 +162,41 @@ kubectl create clusterrolebinding <name> --clusterrole=view --serviceaccount=<na
 # example
 kubectl create clusterrolebinding external-scaler-ns-view --clusterrole=view --serviceaccount=external-scaler-ns:default
 ```
+
+### Deploy
+
+Terminal-1: Watch namespaces
+
+```shell
+watch -x kubectl get all --all-namespaces
+```
+
+Terminal-2: Apply test deployment
+
+```shell
+kubectl apply -f ./deploy.yaml
+```
+
+Terminal-3: Check logs of `pod/keda-operator-*` in `keda` namespace
+
+```shell
+kubectl logs -f -n keda pod/keda-operator-*
+```
+
+Terminal-4: Check logs of `pod/keda-operator-metrics-apiserver-*` in `keda` namespace
+
+```shell
+kubectl logs -f pod/keda-operator-metrics-apiserver-* -n keda
+```
+
+Terminal-5: Check logs of the custom external scaler
+
+```shell
+kubectl logs -f pod/cwm-keda-external-scaler-* -n <namespace>
+```
+
+**NOTE**: The trailing `*` in above `pod/<pod-name>-*` format denotes the actual
+complete name of the pod.
 
 ## Contribute
 
