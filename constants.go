@@ -8,14 +8,12 @@ const (
 	keyRedisPort                = "REDIS_PORT"
 	keyLastUpdatePrefixTemplate = "LAST_UPDATE_PREFIX_TEMPLATE"
 	keyMetricsPrefixTemplate    = "METRICS_PREFIX_TEMPLATE"
-	keyKubeConfig               = "KUBECONFIG"
 
 	// default values
 	defaultRedisHost                = "0.0.0.0"
 	defaultRedisPort                = "6379"
 	defaultLastUpdatePrefixTemplate = "deploymentid:last_action"
 	defaultMetricsPrefixTemplate    = "deploymentid:minio-metrics"
-	defaultKubeConfigPath           = ""
 )
 
 // Local configuration

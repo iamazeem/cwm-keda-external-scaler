@@ -21,10 +21,6 @@ CWM KEDA external scaler for scaling workers.
 | `REDIS_PORT`                    | port of the Redis metrics server      |
 | `LAST_UPDATE_PREFIX_TEMPLATE`   | timestamp of last update              |
 | `METRICS_PREFIX_TEMPLATE`       | prefix to get the metrics from        |
-| `KUBECONFIG`                    | (optional) path to KUBECONFIG file    |
-
-**NOTE**: `KUBECONFIG` is the path of the config file to connect to the cluster,
-if not provided, the config of the cluster will be fetched and used.
 
 ### Local Configuration: Metadata in ScaledObject
 
@@ -152,16 +148,6 @@ docker build -t cwm-keda-external-scaler:latest .
 ```
 
 ## Testing
-
-### Create ClusterRoleBinding for ClusterRole for querying pods information
-
-```shell
-# syntax
-kubectl create clusterrolebinding <name> --clusterrole=view --serviceaccount=<namespace>:<name>
-
-# example
-kubectl create clusterrolebinding external-scaler-ns-view --clusterrole=view --serviceaccount=external-scaler-ns:default
-```
 
 ### Deploy
 

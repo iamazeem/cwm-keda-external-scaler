@@ -150,12 +150,7 @@ func getMetrics(metadata map[string]string) (metric, error) {
 		return metric{}, err
 	}
 
-	noOfPods, err := getNoOfPods(metadata)
-	if err != nil {
-		return metric{}, err
-	}
-
-	metricValue := (m.value - oldMetricValue) / noOfPods
+	metricValue := m.value - oldMetricValue
 
 	return metric{m.name, metricValue}, nil
 }
