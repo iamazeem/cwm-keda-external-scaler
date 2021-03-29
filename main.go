@@ -119,8 +119,8 @@ func getMetric(metadata map[string]string) (metric, error) {
 	log.Println("getting metric {name, value}")
 
 	metricsPrefix := getMetricsPrefix(metadata)
-	scaleMetricName := getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
-	scaleMetricValueStr, isValidMetricValue := getValueFromRedisServer(metricsPrefix + scaleMetricName)
+	scaleMetricName := metricsPrefix + getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
+	scaleMetricValueStr, isValidMetricValue := getValueFromRedisServer(scaleMetricName)
 	if !isValidMetricValue {
 		return metric{}, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValueStr)
 	}
