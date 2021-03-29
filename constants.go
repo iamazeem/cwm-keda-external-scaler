@@ -8,7 +8,7 @@ const (
 	keyRedisPort                = "REDIS_PORT"
 	keyLastUpdatePrefixTemplate = "LAST_UPDATE_PREFIX_TEMPLATE"
 	keyMetricsPrefixTemplate    = "METRICS_PREFIX_TEMPLATE"
-	keyKubeConfigPath           = "KUBECONFIG"
+	keyKubeConfig               = "KUBECONFIG"
 
 	// default values
 	defaultRedisHost                = "0.0.0.0"

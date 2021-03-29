@@ -58,11 +58,11 @@ func getValueFromScalerMetadata(metadata map[string]string, key, defaultValue st
 }
 
 func getNoOfPods(metadata map[string]string) (int64, error) {
-	log.Println(">> getNoOfPods")
+	log.Println("getting the number of pods")
 
 	log.Println("creating kubernetes REST client")
 
-	kubeconfig := getEnv("KUBECONFIG", "")
+	kubeconfig := getEnv(keyKubeConfig, "")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		return -1, status.Error(codes.Internal, err.Error())
@@ -73,7 +73,7 @@ func getNoOfPods(metadata map[string]string) (int64, error) {
 		return -1, status.Error(codes.Internal, err.Error())
 	}
 
-	namespaceName := getValueFromScalerMetadata(metadata, "namespaceName", defaultNamespaceName)
+	namespaceName := getValueFromScalerMetadata(metadata, keyNamespaceName, defaultNamespaceName)
 
 	log.Printf("getting deployments in '%v' namespace", namespaceName)
 
@@ -96,7 +96,7 @@ func getNoOfPods(metadata map[string]string) (int64, error) {
 	// if the comma-separated list of deployment names has been provided
 	// otherwise, return the total number of pods in the current namespace
 
-	deploymentNames := getValueFromScalerMetadata(metadata, "deploymentNames", defaultDeploymentNames)
+	deploymentNames := getValueFromScalerMetadata(metadata, keyDeploymentNames, defaultDeploymentNames)
 
 	var pods int64 = 0
 	if deploymentNames = strings.TrimSpace(deploymentNames); deploymentNames != "" {
@@ -116,7 +116,7 @@ func getNoOfPods(metadata map[string]string) (int64, error) {
 		pods = int64(len(podList.Items))
 	}
 
-	log.Printf("<< getNoOfPods | pods: %v", pods)
+	log.Printf("number of pods: %v", pods)
 
 	return pods, nil
 }
