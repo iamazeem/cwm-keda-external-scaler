@@ -1,22 +1,22 @@
 package main
 
-// Global configuration
+// Global configuration (environment variables)
 
 const (
 	// keys
-	keyRedisHost                = "REDIS_HOST"
-	keyRedisPort                = "REDIS_PORT"
+	keyRedisHost                = "CWM_REDIS_HOST" // Added CWM_ prefix for REDIS_HOST and REDIS_PORT
+	keyRedisPort                = "CWM_REDIS_PORT" // See: https://github.com/docker-library/redis/issues/53
 	keyLastUpdatePrefixTemplate = "LAST_UPDATE_PREFIX_TEMPLATE"
 	keyMetricsPrefixTemplate    = "METRICS_PREFIX_TEMPLATE"
 
 	// default values
-	defaultRedisHost                = "0.0.0.0"
+	defaultRedisHost                = "localhost"
 	defaultRedisPort                = "6379"
 	defaultLastUpdatePrefixTemplate = "deploymentid:last_action"
 	defaultMetricsPrefixTemplate    = "deploymentid:minio-metrics"
 )
 
-// Local configuration
+// Local configuration (ScaledObject metadata)
 
 const (
 	// keys
@@ -31,8 +31,6 @@ const (
 	defaultIsActiveTtlSeconds = "600"
 	defualtScaleMetricName    = "bytes_out"
 	defaultScalePeriodSeconds = "600"
-	defaultNamespaceName      = "default"
-	defaultDeploymentNames    = ""
 	defaultTargetValue        = "10"
 )
 

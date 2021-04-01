@@ -14,8 +14,8 @@ var (
 func connectToRedisServer() bool {
 	log.Printf("establishing connection with Redis server")
 
-	redisHost := getEnv("REDIS_HOST", "localhost")
-	redisPort := getEnv("REDIS_PORT", "6379")
+	redisHost := getEnv(keyRedisHost, defaultRedisHost)
+	redisPort := getEnv(keyRedisPort, defaultRedisPort)
 	address := redisHost + ":" + redisPort
 
 	// check if the existing Redis server's address <host:port> changed

@@ -1,3 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cwm-keda-external-scaler-ns
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,11 +19,21 @@ spec:
         app: cwm-keda-external-scaler
     spec:
       containers:
-      - name: scaler
+      - name: cwm-keda-external-scaler
         image: cwm-keda-external-scaler:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: CWM_REDIS_HOST
+            value: "localhost"
+          - name: CWM_REDIS_PORT
+            value: "6379"
         ports:
         - containerPort: 50051
+      - name: redis
+        image: redis:6
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 6379
 ---
 apiVersion: v1
 kind: Service
@@ -32,36 +47,52 @@ spec:
   selector:
     app: cwm-keda-external-scaler
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: cwm-keda-external-scaler-ns
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-1
+  name: test-app
   namespace: cwm-keda-external-scaler-ns
 spec:
   replicas: 0
   selector:
     matchLabels:
-      app: test-1
+      app: test-app
   template:
     metadata:
       labels:
-        app: test-1
+        app: test-app
     spec:
       containers:
       - name: http
         image: nginx:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
 ---
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: test-1
+  name: test-app
   namespace: cwm-keda-external-scaler-ns
 spec:
   scaleTargetRef:
-    name: test-1
-  pollingInterval: 20
+    name: test-app
+  pollingInterval: 10
   triggers:
     - type: external
       metadata:
         scalerAddress: cwm-keda-external-scaler.cwm-keda-external-scaler-ns:50051
+        isActiveTtlSeconds: "20"
+        scalePeriodSeconds: "10"
+        scaleMetricName: "bytes_out"
+        targetValue: "10"

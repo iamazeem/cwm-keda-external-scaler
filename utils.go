@@ -11,10 +11,16 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type metric struct {
+	name  string
+	value int64
+}
+
 func getEnv(key, defaultValue string) string {
 	key = strings.TrimSpace(key)
 	log.Printf("getting environment variable: key = '%v', default = '%v'", key, defaultValue)
 	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+		log.Printf("got: %v => %v", key, value)
 		return value
 	} else {
 		log.Printf("environment variable '%v' not found! falling back to default value '%v'", key, defaultValue)

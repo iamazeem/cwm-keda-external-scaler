@@ -14,11 +14,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type metric struct {
-	name  string
-	value int64
-}
-
 // Utility functions
 
 func isActive(metadata map[string]string) (bool, error) {
