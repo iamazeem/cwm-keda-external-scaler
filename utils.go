@@ -13,11 +13,11 @@ import (
 
 func getEnv(key, defaultValue string) string {
 	key = strings.TrimSpace(key)
-	log.Printf("getting value from env variable: key = '%v', default = '%v'", key, defaultValue)
+	log.Printf("getting environment variable: key = '%v', default = '%v'", key, defaultValue)
 	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
 		return value
 	} else {
-		log.Printf("'%v' does not exist! falling back to default value '%v'", key, defaultValue)
+		log.Printf("environment variable '%v' not found! falling back to default value '%v'", key, defaultValue)
 		return defaultValue
 	}
 }
@@ -46,11 +46,11 @@ func getMetricsPrefix(metadata map[string]string) string {
 
 func getValueFromScalerMetadata(metadata map[string]string, key, defaultValue string) string {
 	key = strings.TrimSpace(key)
-	log.Printf("getting value from scaler metadata: key = '%v', default = '%v'", key, defaultValue)
+	log.Printf("getting metadata value: key = '%v', default = '%v'", key, defaultValue)
 	if value, exists := metadata[key]; exists {
 		return strings.TrimSpace(value)
 	} else {
-		log.Printf("'%v' does not exist! falling back to default value '%v'", key, defaultValue)
+		log.Printf("metadata value '%v' not found! falling back to default value '%v'", key, defaultValue)
 		return defaultValue
 	}
 }
@@ -59,14 +59,13 @@ func getValueFromScalerMetadata(metadata map[string]string, key, defaultValue st
 
 func getIsActiveTtlSeconds(metadata map[string]string) (int64, error) {
 	isActiveTtlSecondsStr := getValueFromScalerMetadata(metadata, keyIsActiveTtlSeconds, defaultIsActiveTtlSeconds)
-	isActiveTtlSeconds, err := strconv.ParseInt(isActiveTtlSecondsStr, 10, 64)
-	if err != nil {
-		return -1, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyIsActiveTtlSeconds, err.Error())
+	if isActiveTtlSeconds, err := parseInt64(isActiveTtlSecondsStr); err != nil {
+		return -1, err
 	} else if isActiveTtlSeconds < 0 {
 		return -1, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyIsActiveTtlSeconds, isActiveTtlSeconds)
+	} else {
+		return isActiveTtlSeconds, nil
 	}
-
-	return isActiveTtlSeconds, nil
 }
 
 func getLastUpdateTime(metadata map[string]string) (time.Time, error) {
@@ -86,28 +85,27 @@ func getLastUpdateTime(metadata map[string]string) (time.Time, error) {
 
 func getScalePeriodSeconds(metadata map[string]string) (int64, error) {
 	scalePeriodSecondsStr := getValueFromScalerMetadata(metadata, keyScalePeriodSeconds, defaultScalePeriodSeconds)
-	scalePeriodSeconds, err := strconv.ParseInt(scalePeriodSecondsStr, 10, 64)
-	if err != nil {
-		return -1, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyIsActiveTtlSeconds, err.Error())
+	if scalePeriodSeconds, err := parseInt64(scalePeriodSecondsStr); err != nil {
+		return -1, err
 	} else if scalePeriodSeconds < 0 {
 		return -1, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyScalePeriodSeconds, scalePeriodSeconds)
+	} else {
+		return scalePeriodSeconds, nil
 	}
-
-	return scalePeriodSeconds, nil
 }
 
 // GetMetrics utility functions
 
-func parseAsInt64(s string) (int64, error) {
+func parseInt64(s string) (int64, error) {
 	if v, err := strconv.ParseInt(s, 10, 64); err != nil {
-		return -1, status.Errorf(codes.InvalidArgument, "parse failed: %v => %v [%v]", s, v, err.Error())
+		return -1, status.Errorf(codes.InvalidArgument, "parsing failed: %v => %v [%v]", s, v, err.Error())
 	} else {
 		return v, nil
 	}
 }
 
 func parseMetricValue(metricValueStr string) (int64, error) {
-	if metricValue, err := parseAsInt64(metricValueStr); err != nil {
+	if metricValue, err := parseInt64(metricValueStr); err != nil {
 		return -1, err
 	} else if metricValue < 0 {
 		return -1, status.Errorf(codes.InvalidArgument, "invalid %v: %v => %v", keyScaleMetricName, metricValueStr, metricValue)

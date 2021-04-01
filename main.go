@@ -63,7 +63,7 @@ func getMetricSpec(metadata map[string]string) (metric, error) {
 	scaleMetricName := getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
 
 	targetValueStr := getValueFromScalerMetadata(metadata, keyTargetValue, defaultTargetValue)
-	targetValue, err := parseAsInt64(targetValueStr)
+	targetValue, err := parseInt64(targetValueStr)
 	if err != nil {
 		return metric{}, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyTargetValue, err.Error())
 	} else if targetValue < 0 {
