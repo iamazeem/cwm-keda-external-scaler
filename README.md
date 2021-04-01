@@ -11,6 +11,38 @@
 
 CWM KEDA external scaler for scaling workers.
 
+```text
+                                      CONFIGURATION (global and local)
+                                    ------------------------------------
+                                    Env Variables: { REDIS_HOST, ... }
+            {metrics}               ScaledObject : { deploymentid, ... }
+                |                                  |
+                |                                  |
+                |                                  |
+                |                                  |
+      +---------v---------+              +---------v---------+
+      |                   |   {metric}   |                   |
+      |    Redis Server   --------------->  External Scaler  |
+      |                   |              |                   |
+      +-------------------+              +---------|---------+
+                                                   |
+                                                   |
+                                                   |
+                                         +---------v---------+
+                                         |                   |
+                                         |     Kubernetes    |
+                                         |                   |
+                                         +---------|---------+
+                                                   |
+                                                   |  scale
+                                                   |
+                                         +---------v---------+
+                                         |                   |
+                                         |  Target Resource  |
+                                         |                   |
+                                         +-------------------+
+```
+
 ## Configuration
 
 ### Global Configuration: Environment Variables
@@ -63,8 +95,6 @@ The following table lists the supported local configuration:
 | `isActiveTtlSeconds`          | seconds since last update to consider the workload as active |
 | `scaleMetricName`             | metric for scaling (listed below)     |
 | `scalePeriodSeconds`          | retention time for the metric value   |
-| `namespaceName`               | namespace to get the number of pods   |
-| `deploymentNames`             | list of the deployment names to get the number of pods |
 | `targetValue`                 | target value reported by the autoscaler |
 
 **NOTE**: The `deploymentNames` may be a comma-separated list of names.
@@ -136,8 +166,6 @@ spec:
         isActiveTtlSeconds: {seconds}
         scaleMetricName:    {supported-metric-name}
         scalePeriodSeconds: {seconds}
-        namespaceName:      {namespace-name}
-        deploymentNames:    {deployment1, deployment2, ...}
         targetValue:        {target-value}
 ```
 
