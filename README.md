@@ -12,35 +12,35 @@
 CWM KEDA external scaler for scaling workers.
 
 ```text
-                                      CONFIGURATION (global and local)
-                                    ------------------------------------
-                                    Env Variables: { REDIS_HOST, ... }
-            {metrics}               ScaledObject : { deploymentid, ... }
-                |                                  |
-                |                                  |
-                |                                  |
-                |                                  |
-      +---------v---------+              +---------v---------+
-      |                   |   {metric}   |                   |
-      |    Redis Server   --------------->  External Scaler  |
-      |                   |              |                   |
-      +-------------------+              +---------|---------+
-                                                   |
-                                                   |
-                                                   |
-                                         +---------v---------+
-                                         |                   |
-                                         |     Kubernetes    |
-                                         |                   |
-                                         +---------|---------+
-                                                   |
-                                                   |  scale
-                                                   |
-                                         +---------v---------+
-                                         |                   |
-                                         |  Target Resource  |
-                                         |                   |
-                                         +-------------------+
+                                  CONFIGURATION (global and local)
+                                ------------------------------------
+                                Env Variables: { REDIS_HOST, ... }
+        {metrics}               ScaledObject : { deploymentid, ... }
+            |                                  |
+            |                                  |
+            |                                  |
+            v                                  v
+  +-------------------+              +-------------------+
+  |                   |   {metric}   |                   |
+  |    Redis Server   |------------->|  External Scaler  |
+  |                   |              |                   |
+  +-------------------+              +-------------------+
+                                                |
+                                                |
+                                                v
+                                      +-------------------+
+                                      |                   |
+                                      |     Kubernetes    |
+                                      |                   |
+                                      +-------------------+
+                                                |
+                                                |  scale
+                                                v
+                                      +-------------------+
+                                      |                   |
+                                      |  Target Resource  |
+                                      |                   |
+                                      +-------------------+
 ```
 
 ## Configuration
@@ -97,18 +97,16 @@ The following table lists the supported local configuration:
 | `scalePeriodSeconds`          | retention time for the metric value   |
 | `targetValue`                 | target value reported by the autoscaler |
 
-**NOTE**: The `deploymentNames` may be a comma-separated list of names.
+Here are the supported options for `scaleMetricName`:
 
-Supported options for `scaleMetricName`:
-
-- `bytes_in`
-- `bytes_out`
-- `num_requests_in`
-- `num_requests_out`
-- `num_requests_misc`
-- `bytes_total` (`bytes_in` + `bytes_out`)
-- `num_requests_in_out` (`num_requests_in` + `num_requests_out`)
-- `num_requests_total` (`num_requests_in` + `num_requests_out` + `num_requests_misc`)
+1. `bytes_in`
+2. `bytes_out`
+3. `num_requests_in`
+4. `num_requests_out`
+5. `num_requests_misc`
+6. `bytes_total` (`bytes_in` + `bytes_out`)
+7. `num_requests_in_out` (`num_requests_in` + `num_requests_out`)
+8. `num_requests_total` (`num_requests_in` + `num_requests_out` + `num_requests_misc`)
 
 ### Sample Configuration
 
