@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strconv"
 	"time"
 
 	pb "github.com/iamAzeem/cwm-keda-external-scaler/externalscaler"
@@ -21,45 +20,6 @@ type metric struct {
 }
 
 // Utility functions
-
-func getIsActiveTtlSeconds(metadata map[string]string) (int64, error) {
-	isActiveTtlSecondsStr := getValueFromScalerMetadata(metadata, keyIsActiveTtlSeconds, defaultIsActiveTtlSeconds)
-	isActiveTtlSeconds, err := strconv.ParseInt(isActiveTtlSecondsStr, 10, 64)
-	if err != nil {
-		return -1, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyIsActiveTtlSeconds, err.Error())
-	} else if isActiveTtlSeconds < 0 {
-		return -1, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyIsActiveTtlSeconds, isActiveTtlSeconds)
-	}
-
-	return isActiveTtlSeconds, nil
-}
-
-func getLastUpdateTime(metadata map[string]string) (time.Time, error) {
-	keyLastUpdate := getLastUpdatPrefix(metadata)
-	lastUpdateValue, isValidLastUpdateValue := getValueFromRedisServer(keyLastUpdate)
-	if !isValidLastUpdateValue {
-		return time.Time{}, status.Errorf(codes.Internal, "invalid value: %v => %v", keyLastUpdate, lastUpdateValue)
-	}
-
-	lastUpdateTime, err := time.Parse(time.RFC3339Nano, lastUpdateValue)
-	if err != nil {
-		return time.Time{}, status.Errorf(codes.Internal, "invalid value: %v => %v", keyLastUpdate, lastUpdateTime)
-	}
-
-	return lastUpdateTime, nil
-}
-
-func getScalePeriodSeconds(metadata map[string]string) (int64, error) {
-	scalePeriodSecondsStr := getValueFromScalerMetadata(metadata, keyScalePeriodSeconds, defaultScalePeriodSeconds)
-	scalePeriodSeconds, err := strconv.ParseInt(scalePeriodSecondsStr, 10, 64)
-	if err != nil {
-		return -1, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyIsActiveTtlSeconds, err.Error())
-	} else if scalePeriodSeconds < 0 {
-		return -1, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyScalePeriodSeconds, scalePeriodSeconds)
-	}
-
-	return scalePeriodSeconds, nil
-}
 
 func isActive(metadata map[string]string) (bool, error) {
 	log.Println("checking active status")
@@ -103,7 +63,7 @@ func getMetricSpec(metadata map[string]string) (metric, error) {
 	scaleMetricName := getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
 
 	targetValueStr := getValueFromScalerMetadata(metadata, keyTargetValue, defaultTargetValue)
-	targetValue, err := strconv.ParseInt(targetValueStr, 10, 64)
+	targetValue, err := parseAsInt64(targetValueStr)
 	if err != nil {
 		return metric{}, status.Errorf(codes.InvalidArgument, "could not get metadata value for %v. %v", keyTargetValue, err.Error())
 	} else if targetValue < 0 {
@@ -113,28 +73,6 @@ func getMetricSpec(metadata map[string]string) (metric, error) {
 	log.Printf("returning metric spec: { metric name: %v, target value: %v }", scaleMetricName, targetValue)
 
 	return metric{scaleMetricName, targetValue}, nil
-}
-
-func getMetric(metadata map[string]string) (metric, error) {
-	log.Println("getting metric {name, value}")
-
-	metricsPrefix := getMetricsPrefix(metadata)
-	scaleMetricName := metricsPrefix + getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
-	scaleMetricValueStr, isValidMetricValue := getValueFromRedisServer(scaleMetricName)
-	if !isValidMetricValue {
-		return metric{}, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValueStr)
-	}
-
-	scaleMetricValue, err := strconv.ParseInt(scaleMetricValueStr, 10, 64)
-	if err != nil {
-		return metric{}, status.Errorf(codes.Internal, "invalid %v: %v => %v [%v]", keyScaleMetricName, scaleMetricName, scaleMetricValue, err.Error())
-	} else if scaleMetricValue < 0 {
-		return metric{}, status.Errorf(codes.Internal, "invalid %v: %v => %v", keyScaleMetricName, scaleMetricName, scaleMetricValue)
-	}
-
-	log.Printf("returning metrics: { metric name: %v, metric value: %v }", scaleMetricName, scaleMetricValue)
-
-	return metric{scaleMetricName, scaleMetricValue}, nil
 }
 
 func getMetrics(metadata map[string]string) (metric, error) {

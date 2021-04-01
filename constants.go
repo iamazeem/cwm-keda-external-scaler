@@ -24,8 +24,6 @@ const (
 	keyIsActiveTtlSeconds = "isActiveTtlSeconds"
 	keyScaleMetricName    = "scaleMetricName"
 	keyScalePeriodSeconds = "scalePeriodSeconds"
-	keyNamespaceName      = "namespaceName"
-	keyDeploymentNames    = "deploymentNames"
 	keyTargetValue        = "targetValue"
 
 	// default values
@@ -36,4 +34,19 @@ const (
 	defaultNamespaceName      = "default"
 	defaultDeploymentNames    = ""
 	defaultTargetValue        = "10"
+)
+
+// Scale Metric Names
+
+const (
+	keyScaleMetricBytesIn         = "bytes_in"
+	keyScaleMetricBytesOut        = "bytes_out"
+	keyScaleMetricNumRequestsIn   = "num_requests_in"
+	keyScaleMetricNumRequestsOut  = "num_requests_out"
+	keyScaleMetricNumRequestsMisc = "num_requests_misc"
+
+	// aggregates
+	keyScaleMetricBytesTotal       = "bytes_total"
+	keyScaleMetricNumRequestsInOut = "num_requests_in_out"
+	keyScaleMetricNumRequestsTotal = "num_requests_total"
 )
