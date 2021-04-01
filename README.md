@@ -16,10 +16,12 @@ and pushed to the Redis server by the
 stores a number of metrics. Based on its local configuration, the external
 scaler fetches only the required one(s) to make scaling decisions.
 
+### Diagram
+
 ```text
                                   CONFIGURATION (global and local)
                                 ------------------------------------
-                                Env Variables: { REDIS_HOST, ... }
+                                Env Variables: { CWM_REDIS_HOST, ... }
         {metrics}               ScaledObject : { deploymentid, ... }
             |                                  |
             |                                  |
@@ -50,12 +52,14 @@ scaler fetches only the required one(s) to make scaling decisions.
 
 ## Configuration
 
+The external scaler listens on port `50051`.
+
 ### Global Configuration: Environment Variables
 
 | Environment Variable            | Description                           |
 |:--------------------------------|:--------------------------------------|
-| `REDIS_HOST`                    | ip/host of the Redis metrics server   |
-| `REDIS_PORT`                    | port of the Redis metrics server      |
+| `CWM_REDIS_HOST`                | ip/host of the Redis metrics server   |
+| `CWM_REDIS_PORT`                | port of the Redis metrics server      |
 | `LAST_UPDATE_PREFIX_TEMPLATE`   | timestamp of last update              |
 | `METRICS_PREFIX_TEMPLATE`       | prefix to get the metrics from        |
 
@@ -182,13 +186,13 @@ docker build -t cwm-keda-external-scaler:latest .
 
 ### Deploy
 
-Terminal-1: Watch namespaces
+Terminal-1: Watch resources in all the namespaces
 
 ```shell
 watch -x kubectl get all --all-namespaces
 ```
 
-Terminal-2: Apply test deployment
+Terminal-2: Apply test [deployment](deploy.yaml)
 
 ```shell
 kubectl apply -f ./deploy.yaml
@@ -206,10 +210,10 @@ Terminal-4: Check logs of `pod/keda-operator-metrics-apiserver-*` in `keda` name
 kubectl logs -f pod/keda-operator-metrics-apiserver-* -n keda
 ```
 
-Terminal-5: Check logs of the custom external scaler
+Terminal-5: Check logs of the custom external scaler `cwm-keda-external-scaler`
 
 ```shell
-kubectl logs -f pod/cwm-keda-external-scaler-* -n <namespace>
+kubectl logs -f -n cwm-keda-external-scaler-ns pod/cwm-keda-external-scaler-* cwm-keda-external-scaler
 ```
 
 **NOTE**: The trailing `*` in above `pod/<pod-name>-*` format denotes the actual
