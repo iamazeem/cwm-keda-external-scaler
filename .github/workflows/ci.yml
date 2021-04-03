@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    paths-ignore:
+    - '**.md'
+  pull_request:
+    paths-ignore:
+    - '**.md'
+
+jobs:
+  build-and-test:
+    name: KEDA External Scaler
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: balchua/microk8s-actions@v0.2.1
+      with:
+        channel: '1.19/candidate'
+        addons: '["dns", "rbac", "storage"]'
+
+    - name: Build external scaler
+      env:
+        REPO_NAME: cwm-keda-external-scaler
+        K8s_NAMESPACE: cwm-keda-external-scaler-ns
+      run: |
+        docker build -t $REPO_NAME .
+        kubectl apply -f ./deploy.yaml
+        kubectl -n $K8s_NAMESPACE wait --for=condition=available --timeout=60s deployment/$REPO_NAME
+        kubectl -n $K8s_NAMESPACE get pods -o wide
