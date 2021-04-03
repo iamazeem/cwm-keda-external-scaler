@@ -33,5 +33,7 @@ jobs:
       run: |
         docker build -t $REPO_NAME .
         kubectl apply -f ./deploy.yaml
-        kubectl -n $K8s_NAMESPACE wait --for=condition=available --timeout=600s deployment/$REPO_NAME
-        kubectl -n $K8s_NAMESPACE get pods -o wide
+        POD_NAME=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $K8s_NAMESPACE)
+        echo "pod: " $POD_NAME
+        kubectl -n $K8s_NAMESPACE wait --for=condition=Ready --timeout=600s pod/$POD_NAME
+        kubectl -n $K8s_NAMESPACE describe pod/$POD_NAME
