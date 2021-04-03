@@ -26,12 +26,12 @@ jobs:
         sudo microk8s.enable helm3
         sudo microk8s.enable keda
 
-    - name: Build external scaler
+    - name: Build and deploy external scaler
       env:
         REPO_NAME: cwm-keda-external-scaler
         K8s_NAMESPACE: cwm-keda-external-scaler-ns
       run: |
         docker build -t $REPO_NAME .
         kubectl apply -f ./deploy.yaml
-        kubectl -n $K8s_NAMESPACE wait --for=condition=available --timeout=60s deployment/$REPO_NAME
+        kubectl -n $K8s_NAMESPACE wait --for=condition=available --timeout=600s deployment/$REPO_NAME
         kubectl -n $K8s_NAMESPACE get pods -o wide
