@@ -18,7 +18,7 @@ jobs:
 
     - uses: balchua/microk8s-actions@v0.2.1
       with:
-        channel: '1.19/candidate'
+        channel: '1.20/stable'
         addons: '["dns", "rbac", "storage"]'
 
     - name: Enable microk8s Helm and KEDA addons
