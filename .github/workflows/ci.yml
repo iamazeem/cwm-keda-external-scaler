@@ -21,6 +21,10 @@ jobs:
         channel: '1.19/candidate'
         addons: '["dns", "rbac", "storage"]'
 
+    - name: Enable microk8s Helm addon
+      run: |
+        sudo microk8s.enable helm3
+
     - name: Build external scaler
       env:
         REPO_NAME: cwm-keda-external-scaler
