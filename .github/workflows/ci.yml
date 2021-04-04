@@ -33,14 +33,14 @@ jobs:
         sed -i "s#$IMAGE_NAME#$MICROK8S_IMAGE_NAME#" deploy.yaml
         echo "Building docker image [$MICROK8S_IMAGE_NAME]"
         docker build -t $MICROK8S_IMAGE_NAME .
-        # docker push $IMAGE_NAME
+        docker push $MICROK8S_IMAGE_NAME
         docker images
         echo "Deploying test deployment with ScaledObject"
         kubectl apply -f ./deploy.yaml
-        # echo "Listing all"
-        # kubectl get all --all-namespaces
+        echo "Listing all"
+        kubectl get all --all-namespaces
         echo "Waiting for pod to be ready"
         POD_NAME=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
         kubectl describe pod/$POD_NAME -n $NAMESPACE
         kubectl wait --for=condition=ready --timeout=1800s pod/$POD_NAME -n $NAMESPACE
-        echo "pod $POD_NAME is ready"
+        echo "pod [$POD_NAME] is ready"
