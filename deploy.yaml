@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: cwm-keda-external-scaler
-        image: cwm-keda-external-scaler:latest
+        image: localhost:32000/cwm-keda-external-scaler:latest
         imagePullPolicy: IfNotPresent
         env:
           - name: CWM_REDIS_HOST

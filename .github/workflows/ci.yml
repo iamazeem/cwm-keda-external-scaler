@@ -19,22 +19,32 @@ jobs:
     - uses: balchua/microk8s-actions@v0.2.1
       with:
         channel: '1.20/stable'
-        addons: '["dns", "rbac", "storage"]'
+        addons: '["dns", "rbac", "registry"]'
 
     - name: Enable microk8s Helm and KEDA addons
       run: |
         sudo microk8s.enable helm3
         sudo microk8s.enable keda
+        kubectl cluster-info
 
     - name: Build and deploy external scaler
       env:
+        MICROK8S_DOCKER_REGISTRY_ADDR: localhost:32000
         REPO_NAME: cwm-keda-external-scaler
-        K8s_NAMESPACE: cwm-keda-external-scaler-ns
+        NAMESPACE: cwm-keda-external-scaler-ns
       run: |
-        docker build -t $REPO_NAME .
+        IMAGE_NAME=$MICROK8S_DOCKER_REGISTRY_ADDR/$REPO_NAME:latest
+        echo "Building docker image $IMAGE_NAME"
+        docker build -t $IMAGE_NAME .
+        docker push $IMAGE_NAME
+        docker images
+        echo "Deploying test deployment with ScaledObject"
         kubectl apply -f ./deploy.yaml
+        echo "Listing all"
         kubectl get all --all-namespaces
+        echo "Waiting for pod to be ready"
         POD_NAME=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $K8s_NAMESPACE)
         echo "pod: $POD_NAME"
         kubectl describe pod/$POD_NAME -n $K8s_NAMESPACE
         kubectl wait --for=condition=ready --timeout=1800s pod/$POD_NAME -n $K8s_NAMESPACE
+        echo "pod $POD_NAME is ready"
