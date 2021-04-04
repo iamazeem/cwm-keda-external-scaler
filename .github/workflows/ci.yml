@@ -20,10 +20,6 @@ jobs:
       with:
         channel: '1.20/stable'
         addons: '["dns", "rbac", "registry", "keda"]'
-      run: |
-        # sudo microk8s.enable helm3
-        # sudo microk8s.enable keda
-        kubectl cluster-info
 
     - name: Build and deploy external scaler
       env:
@@ -31,6 +27,7 @@ jobs:
         REPO_NAME: cwm-keda-external-scaler
         NAMESPACE: cwm-keda-external-scaler-ns
       run: |
+        kubectl cluster-info
         IMAGE_NAME=$REPO_NAME:latest
         MICROK8S_IMAGE_NAME=$MICROK8S_DOCKER_REGISTRY_ADDR/$IMAGE_NAME
         sed -i "s#$IMAGE_NAME#$MICROK8S_IMAGE_NAME#" deploy.yaml
