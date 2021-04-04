@@ -43,8 +43,8 @@ jobs:
         echo "Listing all"
         kubectl get all --all-namespaces
         echo "Waiting for pod to be ready"
-        POD_NAME=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $K8s_NAMESPACE)
+        POD_NAME=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
         echo "pod: $POD_NAME"
-        kubectl describe pod/$POD_NAME -n $K8s_NAMESPACE
-        kubectl wait --for=condition=ready --timeout=1800s pod/$POD_NAME -n $K8s_NAMESPACE
+        kubectl describe pod/$POD_NAME -n $NAMESPACE
+        kubectl wait --for=condition=ready --timeout=1800s pod/$POD_NAME -n $NAMESPACE
         echo "pod $POD_NAME is ready"
