@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/go-redis/redis/v8"
@@ -31,10 +32,17 @@ func connectToRedisServer() bool {
 
 	// create new Redis client if one does not exist already
 	if rdb == nil {
+		redisDbStr := getEnv(keyRedisDb, defaultRedisDb)
+		redisDb, err := strconv.Atoi(redisDbStr)
+		if err != nil {
+			redisDb = 0
+			log.Printf("invalid redis db %v. err: %v. using default db: %v", redisDbStr, err.Error(), redisDb)
+		}
+
 		rdb = redis.NewClient(&redis.Options{
 			Addr:     address,
 			Password: "", // no password set
-			DB:       0,  // use default DB
+			DB:       redisDb,
 		})
 	}
 

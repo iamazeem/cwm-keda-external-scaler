@@ -61,6 +61,7 @@ The external scaler listens on port `50051`.
 |:--------------------------------|:--------------------------------------|
 | `CWM_REDIS_HOST`                | ip/host of the Redis metrics server   |
 | `CWM_REDIS_PORT`                | port of the Redis metrics server      |
+| `CWM_REDIS_DB`                  | database to use                       |
 | `LAST_UPDATE_PREFIX_TEMPLATE`   | timestamp of last update              |
 | `METRICS_PREFIX_TEMPLATE`       | prefix to get the metrics from        |
 
@@ -110,7 +111,7 @@ The following table lists the supported local configuration:
 Here are the supported options for `scaleMetricName`:
 
 1. `bytes_in`
-2. `bytes_out`
+2. `bytes_out` (default)
 3. `num_requests_in`
 4. `num_requests_out`
 5. `num_requests_misc`
@@ -131,18 +132,18 @@ metadata:
   name: {scaled-object-name}
 spec:
   scaleTargetRef:
-    apiVersion:    {api-version-of-target-resource}  # Optional. Default: apps/v1
-    kind:          {kind-of-target-resource}         # Optional. Default: Deployment
-    name:          {name-of-target-resource}         # Mandatory. Must be in the same namespace as the ScaledObject
-    envSourceContainerName: {container-name}         # Optional. Default: .spec.template.spec.containers[0]
-  pollingInterval: 30                                # Optional. Default: 30 seconds
-  cooldownPeriod:  300                               # Optional. Default: 300 seconds
-  minReplicaCount: 0                                 # Optional. Default: 0
-  maxReplicaCount: 100                               # Optional. Default: 100
-  advanced:                                          # Optional. Section to specify advanced options
-    restoreToOriginalReplicaCount: true/false        # Optional. Default: false
-    horizontalPodAutoscalerConfig:                   # Optional. Section to specify HPA related options
-      behavior:                                      # Optional. Use to modify HPA's scaling behavior
+    apiVersion:    {api-version-of-target-resource}   # Optional. Default: apps/v1
+    kind:          {kind-of-target-resource}          # Optional. Default: Deployment
+    name:          {name-of-target-resource}          # Mandatory. Must be in the same namespace as the ScaledObject
+    envSourceContainerName: {container-name}          # Optional. Default: .spec.template.spec.containers[0]
+  pollingInterval: 30                                 # Optional. Default: 30 seconds
+  cooldownPeriod:  300                                # Optional. Default: 300 seconds
+  minReplicaCount: 0                                  # Optional. Default: 0
+  maxReplicaCount: 100                                # Optional. Default: 100
+  advanced:                                           # Optional. Section to specify advanced options
+    restoreToOriginalReplicaCount: true/false         # Optional. Default: false
+    horizontalPodAutoscalerConfig:                    # Optional. Section to specify HPA related options
+      behavior:                                       # Optional. Use to modify HPA's scaling behavior
         scaleDown:
           stabilizationWindowSeconds: 300
           policies:
@@ -169,12 +170,12 @@ spec:
   triggers:
     - type: external
       metadata:
-        scalerAddress:      {host:port}
-        deploymentid:       {deployment-id}
-        isActiveTtlSeconds: {seconds}
-        scaleMetricName:    {supported-metric-name}
-        scalePeriodSeconds: {seconds}
-        targetValue:        {target-value}
+        scalerAddress:      {host:port}               # Mandatory.
+        deploymentid:       {deployment-id}           # Optional. Default: deploymentid
+        isActiveTtlSeconds: {seconds}                 # Optional. Default: 600
+        scaleMetricName:    {supported-metric-name}   # Optional. Default: bytes_out
+        scalePeriodSeconds: {seconds}                 # Optional. Default: 600
+        targetValue:        {target-value}            # Optional. Default: 10
 ```
 
 ## Build Docker Image

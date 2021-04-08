@@ -6,12 +6,14 @@ const (
 	// keys
 	keyRedisHost                = "CWM_REDIS_HOST" // Added CWM_ prefix for REDIS_HOST and REDIS_PORT
 	keyRedisPort                = "CWM_REDIS_PORT" // See: https://github.com/docker-library/redis/issues/53
+	keyRedisDb                  = "CWM_REDIS_DB"
 	keyLastUpdatePrefixTemplate = "LAST_UPDATE_PREFIX_TEMPLATE"
 	keyMetricsPrefixTemplate    = "METRICS_PREFIX_TEMPLATE"
 
 	// default values
 	defaultRedisHost                = "localhost"
 	defaultRedisPort                = "6379"
+	defaultRedisDb                  = "0"
 	defaultLastUpdatePrefixTemplate = "deploymentid:last_action"
 	defaultMetricsPrefixTemplate    = "deploymentid:minio-metrics"
 )
