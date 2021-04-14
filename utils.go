@@ -18,12 +18,12 @@ type metric struct {
 
 func getEnv(key, defaultValue string) string {
 	key = strings.TrimSpace(key)
-	log.Printf("getting environment variable: key = '%v', default = '%v'", key, defaultValue)
+	log.Printf("getting environment variable: '%v', default = '%v'", key, defaultValue)
 	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
-		log.Printf("got: %v => %v", key, value)
+		log.Printf("got: %v = %v", key, value)
 		return value
 	} else {
-		log.Printf("environment variable '%v' not found! falling back to default value '%v'", key, defaultValue)
+		log.Printf("got: %v = %v (default)", key, defaultValue)
 		return defaultValue
 	}
 }
@@ -52,11 +52,13 @@ func getMetricsPrefix(metadata map[string]string) string {
 
 func getValueFromScalerMetadata(metadata map[string]string, key, defaultValue string) string {
 	key = strings.TrimSpace(key)
-	log.Printf("getting metadata value: key = '%v', default = '%v'", key, defaultValue)
+	log.Printf("getting metadata: '%v', default = '%v'", key, defaultValue)
 	if value, exists := metadata[key]; exists {
-		return strings.TrimSpace(value)
+		value = strings.TrimSpace(value)
+		log.Printf("got: %v = %v", key, value)
+		return value
 	} else {
-		log.Printf("metadata value '%v' not found! falling back to default value '%v'", key, defaultValue)
+		log.Printf("got: %v = %v (default)", key, defaultValue)
 		return defaultValue
 	}
 }
@@ -121,7 +123,7 @@ func parseMetricValue(metricValueStr string) (int64, error) {
 }
 
 func getMetricValue(metricsPrefix, metricName string) (int64, error) {
-	key := metricsPrefix + metricName
+	key := metricsPrefix + ":" + metricName
 	if valueStr, ok := getValueFromRedisServer(key); !ok {
 		return -1, status.Errorf(codes.InvalidArgument, "invalid %v: %v => %v", keyScaleMetricName, key, valueStr)
 	} else if metricValue, err := parseMetricValue(valueStr); err != nil {
@@ -165,7 +167,7 @@ func getNumRequestsTotal(metricsPrefix string) (int64, error) {
 }
 
 func getMetric(metadata map[string]string) (metric, error) {
-	log.Println("getting metric {name, value}")
+	log.Println("getting metric { name, value }")
 
 	var scaleMetricValue int64 = 0
 	var err error = nil
@@ -189,7 +191,7 @@ func getMetric(metadata map[string]string) (metric, error) {
 		return metric{}, err
 	}
 
-	log.Printf("returning metrics: { metric name: %v, metric value: %v }", scaleMetricName, scaleMetricValue)
+	log.Printf("returning metric: { name: %v, value: %v }", scaleMetricName, scaleMetricValue)
 
 	return metric{scaleMetricName, scaleMetricValue}, nil
 }

@@ -53,7 +53,7 @@ func isActive(metadata map[string]string) (bool, error) {
 }
 
 func getMetricSpec(metadata map[string]string) (metric, error) {
-	log.Println("getting metric spec {metric name, target value}")
+	log.Println("getting metric spec { metric name, target value }")
 
 	scaleMetricName := getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
 
@@ -71,21 +71,27 @@ func getMetricSpec(metadata map[string]string) (metric, error) {
 }
 
 func getMetrics(metadata map[string]string) (metric, error) {
-	metricData, err := cache.getOldestMetricData()
+	log.Println("getting metrics { name, value }")
+
+	oldMetricData, err := cache.getOldestMetricData()
 	if err != nil {
 		return metric{}, err
 	}
 
-	oldMetricValue := metricData.metricValue
-
-	m, err := getMetric(metadata)
+	newMetric, err := getMetric(metadata)
 	if err != nil {
 		return metric{}, err
 	}
 
-	metricValue := m.value - oldMetricValue
+	oldMetricValue := oldMetricData.metricValue
+	log.Printf("old metric value: %v", oldMetricValue)
 
-	return metric{m.name, metricValue}, nil
+	log.Printf("new metric value: %v", newMetric.value)
+
+	metricValueDiff := newMetric.value - oldMetricValue
+	log.Printf("returning metrics: { name: %v, value: %v }", newMetric.name, metricValueDiff)
+
+	return metric{newMetric.name, metricValueDiff}, nil
 }
 
 // External Scaler

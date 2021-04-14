@@ -13,38 +13,30 @@ var (
 )
 
 func connectToRedisServer() bool {
-	log.Printf("establishing connection with Redis server")
+	// return true if already connected
+	if rdb != nil {
+		return true
+	}
+
+	log.Printf("connecting with Redis server")
 
 	redisHost := getEnv(keyRedisHost, defaultRedisHost)
 	redisPort := getEnv(keyRedisPort, defaultRedisPort)
 	address := redisHost + ":" + redisPort
 
-	// check if the existing Redis server's address <host:port> changed
-	// close the existing connection and cleanup
-	// and try to connect with the new Redis server
-	if rdb != nil && address != rdb.Options().Addr {
-		log.Printf("address of Redis server changed from %v to %v", rdb.Options().Addr, address)
-		log.Printf("previous Redis connection will be closed and the new one will be established")
-
-		rdb.Close()
-		rdb = nil
-	}
-
 	// create new Redis client if one does not exist already
-	if rdb == nil {
-		redisDbStr := getEnv(keyRedisDb, defaultRedisDb)
-		redisDb, err := strconv.Atoi(redisDbStr)
-		if err != nil {
-			redisDb = 0
-			log.Printf("invalid redis db %v. err: %v. using default db: %v", redisDbStr, err.Error(), redisDb)
-		}
-
-		rdb = redis.NewClient(&redis.Options{
-			Addr:     address,
-			Password: "", // no password set
-			DB:       redisDb,
-		})
+	redisDbStr := getEnv(keyRedisDb, defaultRedisDb)
+	redisDb, err := strconv.Atoi(redisDbStr)
+	if err != nil {
+		redisDb = 0
+		log.Printf("invalid redis db %v. err: %v. using default db: %v", redisDbStr, err.Error(), redisDb)
 	}
+
+	rdb = redis.NewClient(&redis.Options{
+		Addr:     address,
+		Password: "", // no password set
+		DB:       redisDb,
+	})
 
 	if !pingRedisServer() {
 		rdb.Close()
@@ -52,7 +44,7 @@ func connectToRedisServer() bool {
 		return false
 	}
 
-	log.Printf("successful connection with Redis server [%v]", address)
+	log.Printf("connected with Redis server [%v]", address)
 
 	return true
 }
@@ -75,13 +67,13 @@ func pingRedisServer() bool {
 		return false
 	}
 
-	log.Printf("Redis server replied: '%v'", val)
+	log.Printf("got: 'PING' = '%v'", val)
 
 	return true
 }
 
 func getValueFromRedisServer(key string) (string, bool) {
-	log.Printf("getting value for '%v' key from Redis server", key)
+	log.Printf("getting '%v' from Redis server", key)
 
 	if !connectToRedisServer() {
 		log.Println("could not connect with Redis server")
@@ -101,7 +93,7 @@ func getValueFromRedisServer(key string) (string, bool) {
 		return val, false
 	}
 
-	log.Printf("Redis server returned: '%v'", val)
+	log.Printf("got: %v = %v", key, val)
 
 	return val, true
 }

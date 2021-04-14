@@ -30,10 +30,13 @@ func (c *metricCache) isEmpty() bool {
 }
 
 func (c *metricCache) append(metricValue int64) {
-	c.cache = append(c.cache, metricData{
-		timestamp:   time.Now(),
-		metricValue: metricValue,
-	})
+	// append value if cache is empty or the metric value is greater than the last one
+	if c.isEmpty() || metricValue > c.cache[c.getSize()-1].metricValue {
+		c.cache = append(c.cache, metricData{
+			timestamp:   time.Now().UTC(),
+			metricValue: metricValue,
+		})
+	}
 }
 
 func (c *metricCache) purge(scalePeriodSeconds int64) {
@@ -46,18 +49,25 @@ func (c *metricCache) purge(scalePeriodSeconds int64) {
 
 	// remove values with timestamps with difference older than scalePeriodSeconds
 	// e.g. if scalePeriodSeconds = 600, all the values with difference >= 600 will be removed
-	oldCacheSize := c.getSize()
-	now := time.Now()
+	now := time.Now().UTC()
+	count := 0
 	for i, d := range c.cache {
-		seconds := int64(now.Sub(d.timestamp).Seconds())
-		if seconds < scalePeriodSeconds {
-			c.cache = c.cache[i:]
-
-			newCacheSize := c.getSize()
-			noOfValuesPurged := oldCacheSize - newCacheSize
-			log.Printf("purged %v values. cache size: {old: %v, new: %v}", noOfValuesPurged, oldCacheSize, newCacheSize)
-			break
+		seconds := now.Sub(d.timestamp).Seconds()
+		log.Printf("cache entry index: %v, seconds elapsed: %v", i, seconds)
+		if seconds > float64(scalePeriodSeconds) {
+			count++
+			log.Printf("scalePeriodSeconds [%v] expired, index: %v, timestamp: %v", scalePeriodSeconds, i, d.timestamp)
 		}
+	}
+
+	log.Printf("number of values to purge: %v", count)
+
+	if count > 0 {
+		oldCacheSize := c.getSize()
+		c.cache = c.cache[count:]
+		newCacheSize := c.getSize()
+		noOfValuesPurged := oldCacheSize - newCacheSize
+		log.Printf("purged %v value(s). cache size: {old: %v, new: %v}", noOfValuesPurged, oldCacheSize, newCacheSize)
 	}
 }
 
