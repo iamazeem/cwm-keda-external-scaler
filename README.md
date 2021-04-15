@@ -194,10 +194,10 @@ Terminal-1: Watch resources in all the namespaces
 watch -x kubectl get all --all-namespaces
 ```
 
-Terminal-2: Apply test [deployment](deploy.yaml)
+Terminal-2: Apply test [deployment](./test/deploy.yaml)
 
 ```shell
-kubectl apply -f ./deploy.yaml
+kubectl apply -f ./test/deploy.yaml
 ```
 
 Terminal-3: Check logs of `pod/keda-operator-*` in `keda` namespace

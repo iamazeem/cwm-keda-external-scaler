@@ -32,4 +32,4 @@ jobs:
         echo "Building docker image [$MICROK8S_IMAGE_NAME]"
         docker build -t $MICROK8S_IMAGE_NAME .
         docker push $MICROK8S_IMAGE_NAME
-        ./bin/run_scaling_tests.sh
+        ./test/run_scaling_tests.sh

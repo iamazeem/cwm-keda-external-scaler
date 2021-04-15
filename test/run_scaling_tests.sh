@@ -2,7 +2,7 @@
 
 set -e
 
-TEST_DEPLOYMENT="../deploy.yaml"
+TEST_DEPLOYMENT="./deploy.yaml"
 NAMESPACE="cwm-keda-external-scaler-ns"
 TZ="UTC"
 FMT_DATETIME="%Y-%m-%dT%H:%M:%S.%8NZ"
@@ -54,3 +54,7 @@ do
     kubectl wait --for=condition=ready --timeout=600s "pod/$pod" -n $NAMESPACE
 done
 echo "SUCCESS: Multiple pods scaling completed"
+
+# Teardown
+echo "Deleting namespace [$NAMESPACE]"
+kubectl delete ns $NAMESPACE
