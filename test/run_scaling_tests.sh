@@ -31,7 +31,8 @@ echo "Waiting for pod/$POD_NAME_SCALER to be ready"
 kubectl wait --for=condition=ready --timeout=600s "pod/$POD_NAME_SCALER" -n $NAMESPACE
 echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
 echo "Pining Redis server"
-kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli PING
+for i in {1..5}; do kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli PING && break; done
+# kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli PING
 
 # Test
 echo
@@ -68,6 +69,5 @@ echo "SUCCESS: Multiple pods scaling completed"
 # Teardown
 echo "Deleting namespace [$NAMESPACE]"
 kubectl delete ns $NAMESPACE
-kubectl wait --for=delete --timeout=600s ns $NAMESPACE
 
 echo "--- [DONE] ---"
