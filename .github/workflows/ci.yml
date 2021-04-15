@@ -39,6 +39,7 @@ jobs:
         echo "Building docker image [$MICROK8S_IMAGE_NAME]"
         docker build -t $MICROK8S_IMAGE_NAME .
         docker push $MICROK8S_IMAGE_NAME
+        # Deploy
         echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
         kubectl apply -f $TEST_DEPLOYMENT
         sleep 10s
@@ -50,28 +51,27 @@ jobs:
         echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
         echo "Pining Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli PING
-        echo "Testing 0-to-1 scaling"
+        # Test
+        echo "TEST # 1: Zero-to-one scaling"
         echo "Setting $METRIC_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli SET "$METRIC_KEY" "10"
         echo "Setting $LAST_ACTION_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
         sleep 10s
-        # echo "Listing all in namespace [$NAMESPACE]"
-        # kubectl get all -n $NAMESPACE
         POD_NAME_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
         echo "Waiting for pod/$POD_NAME_TEST_APP to be ready"
         kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME_TEST_APP -n $NAMESPACE
         echo "SUCCESS: pod/$POD_NAME_TEST_APP is ready"
         echo "SUCCESS: 0-to-1 scaling completed"
-        echo "Testing multiple pods scaling"
+        # Test
+        echo "TEST # 2: Multiple pods scaling [1-to-4]"
         echo "Setting $METRIC_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli SET "$METRIC_KEY" "50"
         echo "Setting $LAST_ACTION_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
         sleep 10s
-        # echo "Listing all in namespace [$NAMESPACE]"
-        # kubectl get all -n $NAMESPACE
         POD_NAMES_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
         POD_NAMES_ARRAY=($POD_NAMES_TEST_APP)
+        echo "Verifying pods [$POD_NAMES_ARRAY]"
         for p in "${POD_NAMES_ARRAY[@]}"; do echo "Waiting for pod/$p to be ready"; kubectl wait --for=condition=ready --timeout=600s pod/$p -n $NAMESPACE; done
         echo "SUCCESS: multiple pods scaling completed"
