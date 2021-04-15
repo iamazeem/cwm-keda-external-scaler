@@ -88,11 +88,24 @@ spec:
   scaleTargetRef:
     name: test-app
   pollingInterval: 10
+  # cooldownPeriod:  20
+  # minReplicaCount: 0
+  # maxReplicaCount: 10
+  # advanced:
+  #   restoreToOriginalReplicaCount: true
+  #   horizontalPodAutoscalerConfig:
+  #     behavior:
+  #       scaleDown:
+  #         stabilizationWindowSeconds: 30
+  #         policies:
+  #         - type: Percent
+  #           value: 80
+  #           periodSeconds: 15
   triggers:
     - type: external
       metadata:
         scalerAddress: cwm-keda-external-scaler.cwm-keda-external-scaler-ns:50051
         isActiveTtlSeconds: "20"
-        scalePeriodSeconds: "10"
+        scalePeriodSeconds: "20"
         scaleMetricName: "bytes_out"
         targetValue: "10"

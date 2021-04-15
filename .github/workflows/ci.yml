@@ -26,6 +26,10 @@ jobs:
         MICROK8S_DOCKER_REGISTRY_ADDR: localhost:32000
         REPO_NAME: cwm-keda-external-scaler
         NAMESPACE: cwm-keda-external-scaler-ns
+        TZ: "UTC"
+        FMT_DATETIME: "%Y-%m-%dT%H:%M:%S.%8NZ"
+        METRIC_KEY: "deploymentid:minio-metrics:bytes_out"
+        LAST_ACTION_KEY: "deploymentid:last_action"
       run: |
         IMAGE_NAME=$REPO_NAME:latest
         MICROK8S_IMAGE_NAME=$MICROK8S_DOCKER_REGISTRY_ADDR/$IMAGE_NAME
@@ -38,7 +42,16 @@ jobs:
         echo "Listing all in namespace [$NAMESPACE]"
         kubectl get all -n $NAMESPACE
         echo "Waiting for pod to be ready"
-        POD_NAME=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
-        kubectl describe pod/$POD_NAME -n $NAMESPACE
-        kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME -n $NAMESPACE
-        echo "SUCCESS: pod [$POD_NAME] is ready"
+        POD_NAME_SCALER=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
+        kubectl describe pod/$POD_NAME_SCALER -n $NAMESPACE
+        kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME_SCALER -n $NAMESPACE
+        echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
+        echo "testing 0-to-1 scaling"
+        kubectl exec -it -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$METRIC_KEY" "10"
+        kubectl exec -it -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
+        sleep 30s
+        POD_NAME_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "test-app")
+        echo "waiting for pod/$POD_NAME_TEST_APP to be ready"
+        kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME_TEST_APP -n $NAMESPACE
+        ehco "SUCCESS: pod/$POD_NAME_TEST_APP is ready"
+        echo "SUCCESS: 0-to-1 scaling completed"
