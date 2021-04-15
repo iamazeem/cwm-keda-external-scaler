@@ -221,7 +221,7 @@ kubectl logs -f -n cwm-keda-external-scaler-ns pod/cwm-keda-external-scaler-* cw
 **NOTE**: The trailing `*` in above `pod/<pod-name>-*` format denotes the actual
 complete name of the pod.
 
-For more details, take a look at [CI](/.github/workflows/ci.yml).
+For more details, take a look at [CI test script](./test/run_scaling_tests.sh).
 
 ## Contribute
 
