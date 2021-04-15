@@ -30,6 +30,7 @@ jobs:
         FMT_DATETIME: "%Y-%m-%dT%H:%M:%S.%8NZ"
         METRIC_KEY: "deploymentid:minio-metrics:bytes_out"
         LAST_ACTION_KEY: "deploymentid:last_action"
+        PREFIX_TEST_APP: "test-app"
       run: |
         IMAGE_NAME=$REPO_NAME:latest
         MICROK8S_IMAGE_NAME=$MICROK8S_DOCKER_REGISTRY_ADDR/$IMAGE_NAME
@@ -41,17 +42,18 @@ jobs:
         kubectl apply -f ./deploy.yaml
         echo "Listing all in namespace [$NAMESPACE]"
         kubectl get all -n $NAMESPACE
-        echo "Waiting for pod to be ready"
+        echo "Waiting for pod/$POD_NAME_SCALER to be ready"
         POD_NAME_SCALER=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
         kubectl describe pod/$POD_NAME_SCALER -n $NAMESPACE
         kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME_SCALER -n $NAMESPACE
         echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
-        echo "testing 0-to-1 scaling"
-        kubectl exec -it -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$METRIC_KEY" "10"
-        kubectl exec -it -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-        sleep 30s
-        POD_NAME_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "test-app")
-        echo "waiting for pod/$POD_NAME_TEST_APP to be ready"
+        echo "Testing 0-to-1 scaling"
+        kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$METRIC_KEY" "10"
+        kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
+        echo "Listing all in namespace [$NAMESPACE]"
+        kubectl get all -n $NAMESPACE
+        POD_NAME_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
+        echo "Waiting for pod/$POD_NAME_TEST_APP to be ready"
         kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME_TEST_APP -n $NAMESPACE
-        ehco "SUCCESS: pod/$POD_NAME_TEST_APP is ready"
+        echo "SUCCESS: pod/$POD_NAME_TEST_APP is ready"
         echo "SUCCESS: 0-to-1 scaling completed"
