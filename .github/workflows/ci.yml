@@ -30,13 +30,16 @@ jobs:
       env:
         USERNAME: ${{ github.actor }}
         PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-        PKGS_PATH: docker.pkg.github.com
-        REPO: cwm-keda-external-scaler
-        IMAGE: cwm-keda-external-scaler
+        PKGS_URL: docker.pkg.github.com
+        REPO: ${{ github.repository }}
+        SOURCE_IMAGE: cwm-keda-external-scaler
+        TAG: latest
       run: |
         echo $PASSWORD | docker login https://docker.pkg.github.com -u $USERNAME --password-stdin
         docker images
-        TAG=latest
-        TARGET_IMAGE=$PKGS_PATH/$USERNAME/$REPO/$IMAGE:$TAG
+        TARGET_IMAGE=$PKGS_URL/$REPO/$SOURCE_IMAGE:$TAG
+        docker tag $SOURCE_IMAGE $TARGET_IMAGE
+        docker images
+        echo "Pushing image [$TARGET_IMAGE]"
         docker push $TARGET_IMAGE
         echo "Docker image [$TARGET_IMAGE] pushed successfully!"
