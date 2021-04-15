@@ -24,3 +24,15 @@ jobs:
     - name: Run scaling tests
       run: |
         ./test/run_scaling_tests.sh
+
+    - name: Push docker image to GitHub Packages
+      if: github.ref == 'refs/heads/main'
+      env:
+        USERNAME: ${{ github.actor }}
+        PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        IMAGE: cwm-keda-external-scaler
+      run: |
+        echo $PASSWORD | docker login https://docker.pkg.github.com -u $USERNAME --password-stdin
+        # docker build -t $IMAGE:$TAG .
+        docker push $IMAGE:$GITHUB_SHA
+        docker push $IMAGE:latest
