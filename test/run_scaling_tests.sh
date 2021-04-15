@@ -2,7 +2,7 @@
 
 set -e
 
-TEST_DEPLOYMENT="./deploy.yaml"
+TEST_DEPLOYMENT="./test/deploy.yaml"
 NAMESPACE="cwm-keda-external-scaler-ns"
 TZ="UTC"
 FMT_DATETIME="%Y-%m-%dT%H:%M:%S.%8NZ"
