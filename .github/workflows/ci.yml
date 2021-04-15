@@ -48,7 +48,7 @@ jobs:
         kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME_SCALER -n $NAMESPACE
         echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
         echo "Testing 0-to-1 scaling"
-        echo "Setting $MERTIC_KEY in Redis server"
+        echo "Setting $METRIC_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$METRIC_KEY" "10"
         echo "Setting $LAST_ACTION_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
@@ -61,7 +61,7 @@ jobs:
         echo "SUCCESS: pod/$POD_NAME_TEST_APP is ready"
         echo "SUCCESS: 0-to-1 scaling completed"
         echo "Testing multiple pods scaling"
-        echo "Setting $MERTIC_KEY in Redis server"
+        echo "Setting $METRIC_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$METRIC_KEY" "50"
         echo "Setting $LAST_ACTION_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
