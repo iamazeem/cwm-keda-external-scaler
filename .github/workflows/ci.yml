@@ -31,13 +31,13 @@ jobs:
         USERNAME: iamazeem
         PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         PKGS_URL: docker.pkg.github.com
-        REPO: ${{ github.repository }}
+        REPO: cwm-keda-external-scaler
         SOURCE_IMAGE: cwm-keda-external-scaler
         TAG: latest
       run: |
         echo $PASSWORD | docker login https://docker.pkg.github.com -u $USERNAME --password-stdin
         docker images
-        TARGET_IMAGE=$PKGS_URL/$REPO/$SOURCE_IMAGE:$TAG
+        TARGET_IMAGE=$PKGS_URL/$REPO/$USERNAME/$SOURCE_IMAGE:$TAG
         docker tag $SOURCE_IMAGE $TARGET_IMAGE
         docker images
         echo "Pushing image [$TARGET_IMAGE]"
