@@ -24,8 +24,9 @@ jobs:
     - name: Build and deploy external scaler
       env:
         MICROK8S_DOCKER_REGISTRY_ADDR: localhost:32000
-        REPO_NAME: cwm-keda-external-scaler
-        NAMESPACE: cwm-keda-external-scaler-ns
+        REPO_NAME: "cwm-keda-external-scaler"
+        TEST_DEPLOYMENT: "./deploy.yaml"
+        NAMESPACE: "cwm-keda-external-scaler-ns"
         TZ: "UTC"
         FMT_DATETIME: "%Y-%m-%dT%H:%M:%S.%8NZ"
         METRIC_KEY: "deploymentid:minio-metrics:bytes_out"
@@ -38,13 +39,12 @@ jobs:
         echo "Building docker image [$MICROK8S_IMAGE_NAME]"
         docker build -t $MICROK8S_IMAGE_NAME .
         docker push $MICROK8S_IMAGE_NAME
-        echo "Deploying test deployment with ScaledObject"
-        kubectl apply -f ./deploy.yaml
+        echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
+        kubectl apply -f $TEST_DEPLOYMENT
         echo "Listing all in namespace [$NAMESPACE]"
         kubectl get all -n $NAMESPACE
         echo "Waiting for pod/$POD_NAME_SCALER to be ready"
         POD_NAME_SCALER=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
-        kubectl describe pod/$POD_NAME_SCALER -n $NAMESPACE
         kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME_SCALER -n $NAMESPACE
         echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
         echo "Testing 0-to-1 scaling"
