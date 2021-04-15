@@ -2,6 +2,8 @@
 
 set -e
 
+MICROK8S_DOCKER_REGISTRY_ADDR="localhost:32000"
+REPO_NAME="cwm-keda-external-scaler"
 TEST_DEPLOYMENT="./test/deploy.yaml"
 NAMESPACE="cwm-keda-external-scaler-ns"
 TZ="UTC"
@@ -9,6 +11,14 @@ FMT_DATETIME="%Y-%m-%dT%H:%M:%S.%8NZ"
 METRIC_KEY="deploymentid:minio-metrics:bytes_out"
 LAST_ACTION_KEY="deploymentid:last_action"
 PREFIX_TEST_APP="test-app"
+
+# Build and push to microk8s docker registry
+IMAGE_NAME="$REPO_NAME:latest"
+MICROK8S_IMAGE_NAME="$MICROK8S_DOCKER_REGISTRY_ADDR/$IMAGE_NAME"
+sed -i "s#$IMAGE_NAME#$MICROK8S_IMAGE_NAME#" "$TEST_DEPLOYMENT"
+echo "Building docker image [$MICROK8S_IMAGE_NAME]"
+docker build -t "$MICROK8S_IMAGE_NAME" .
+docker push "$MICROK8S_IMAGE_NAME"
 
 # Deploy
 echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
@@ -58,3 +68,5 @@ echo "SUCCESS: Multiple pods scaling completed"
 # Teardown
 echo "Deleting namespace [$NAMESPACE]"
 kubectl delete ns $NAMESPACE
+
+echo "--- [DONE] ---"

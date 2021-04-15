@@ -21,15 +21,6 @@ jobs:
         channel: '1.20/stable'
         addons: '["dns", "rbac", "registry", "keda"]'
 
-    - name: Build and deploy external scaler
-      env:
-        MICROK8S_DOCKER_REGISTRY_ADDR: localhost:32000
-        REPO_NAME: cwm-keda-external-scaler
+    - name: Run scaling tests
       run: |
-        IMAGE_NAME=$REPO_NAME:latest
-        MICROK8S_IMAGE_NAME=$MICROK8S_DOCKER_REGISTRY_ADDR/$IMAGE_NAME
-        sed -i "s#$IMAGE_NAME#$MICROK8S_IMAGE_NAME#" ./test/deploy.yaml
-        echo "Building docker image [$MICROK8S_IMAGE_NAME]"
-        docker build -t $MICROK8S_IMAGE_NAME .
-        docker push $MICROK8S_IMAGE_NAME
         ./test/run_scaling_tests.sh
