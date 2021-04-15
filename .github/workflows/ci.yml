@@ -30,11 +30,11 @@ jobs:
       env:
         USERNAME: ${{ github.actor }}
         PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        REPO: ${{ github.repository }}
         IMAGE: cwm-keda-external-scaler
       run: |
         echo $PASSWORD | docker login https://docker.pkg.github.com -u $USERNAME --password-stdin
-        # docker build -t $IMAGE:latest .
         docker images
-        # docker push $IMAGE:$GITHUB_SHA
-        docker push $IMAGE:latest
+        TAG=latest
+        docker push $REPO/$IMAGE:$TAG
         echo "Docker image pushed successfully!"

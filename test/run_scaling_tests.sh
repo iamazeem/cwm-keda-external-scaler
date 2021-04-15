@@ -32,7 +32,6 @@ kubectl wait --for=condition=ready --timeout=600s "pod/$POD_NAME_SCALER" -n $NAM
 echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
 echo "Pining Redis server"
 for i in {1..5}; do kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli PING && break; done
-# kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli PING
 
 # Test
 echo
@@ -69,5 +68,9 @@ echo "SUCCESS: Multiple pods scaling completed"
 # Teardown
 echo "Deleting namespace [$NAMESPACE]"
 kubectl delete ns $NAMESPACE
+
+# Retag docker image
+echo "Retaging image"
+docker tag $MICROK8S_IMAGE_NAME $IMAGE_NAME
 
 echo "--- [DONE] ---"
