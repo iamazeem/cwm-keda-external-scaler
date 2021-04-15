@@ -30,7 +30,7 @@ jobs:
       env:
         USERNAME: ${{ github.actor }}
         PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-        REPO: ${{ github.repository }}
+        REPO: cwm-keda-external-scaler
         IMAGE: cwm-keda-external-scaler
       run: |
         echo $PASSWORD | docker login https://docker.pkg.github.com -u $USERNAME --password-stdin
