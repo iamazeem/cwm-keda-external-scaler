@@ -28,7 +28,7 @@ jobs:
     - name: Push docker image to GitHub Packages
       if: github.ref == 'refs/heads/main'
       env:
-        USERNAME: ${{ github.actor }}
+        USERNAME: iamazeem
         PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         PKGS_URL: docker.pkg.github.com
         REPO: ${{ github.repository }}
