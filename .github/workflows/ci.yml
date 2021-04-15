@@ -28,8 +28,8 @@ jobs:
     - name: Push docker image to GitHub Packages
       if: github.ref == 'refs/heads/main'
       env:
-        USERNAME: iamazeem
-        PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        USERNAME: ${{ github.actor }}
+        PASSWORD: ${{ github.token }}
         PKGS_URL: docker.pkg.github.com
         REPO: cwm-keda-external-scaler
         SOURCE_IMAGE: cwm-keda-external-scaler
@@ -37,7 +37,7 @@ jobs:
       run: |
         echo $PASSWORD | docker login https://docker.pkg.github.com -u $USERNAME --password-stdin
         docker images
-        TARGET_IMAGE=$PKGS_URL/$REPO/$USERNAME/$SOURCE_IMAGE:$TAG
+        TARGET_IMAGE=$PKGS_URL/$USERNAME/$REPO/$SOURCE_IMAGE:$TAG
         docker tag $SOURCE_IMAGE $TARGET_IMAGE
         docker images
         echo "Pushing image [$TARGET_IMAGE]"
