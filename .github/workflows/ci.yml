@@ -48,7 +48,9 @@ jobs:
         kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME_SCALER -n $NAMESPACE
         echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
         echo "Testing 0-to-1 scaling"
+        echo "Setting $MERTIC_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$METRIC_KEY" "10"
+        echo "Setting $LAST_ACTION_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
         echo "Listing all in namespace [$NAMESPACE]"
         kubectl get all -n $NAMESPACE
@@ -57,3 +59,14 @@ jobs:
         kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME_TEST_APP -n $NAMESPACE
         echo "SUCCESS: pod/$POD_NAME_TEST_APP is ready"
         echo "SUCCESS: 0-to-1 scaling completed"
+        echo "Testing multiple pods scaling"
+        echo "Setting $MERTIC_KEY in Redis server"
+        kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$METRIC_KEY" "50"
+        echo "Setting $LAST_ACTION_KEY in Redis server"
+        kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
+        echo "Listing all in namespace [$NAMESPACE]"
+        kubectl get all -n $NAMESPACE
+        POD_NAMES_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
+        POD_NAMES_ARRAY=($POD_NAMES_TEST_APP)
+        for pod in "${POD_NAMES_ARRAY[@]}"; do echo "Waiting for $pod to be ready"; kubectl wait --for=condition=ready --timeout=600s pod/$i -n $NAMESPACE; done
+        echo "SUCCESS: multiple pods scaling completed"
