@@ -68,5 +68,6 @@ echo "SUCCESS: Multiple pods scaling completed"
 # Teardown
 echo "Deleting namespace [$NAMESPACE]"
 kubectl delete ns $NAMESPACE
+kubectl wait --for=delete --timeout=600s ns $NAMESPACE
 
 echo "--- [DONE] ---"

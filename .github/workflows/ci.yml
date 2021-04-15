@@ -33,6 +33,8 @@ jobs:
         IMAGE: cwm-keda-external-scaler
       run: |
         echo $PASSWORD | docker login https://docker.pkg.github.com -u $USERNAME --password-stdin
-        # docker build -t $IMAGE:$TAG .
-        docker push $IMAGE:$GITHUB_SHA
+        # docker build -t $IMAGE:latest .
+        docker images
+        # docker push $IMAGE:$GITHUB_SHA
         docker push $IMAGE:latest
+        echo "Docker image pushed successfully!"
