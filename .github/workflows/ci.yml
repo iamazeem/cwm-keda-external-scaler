@@ -43,8 +43,8 @@ jobs:
         kubectl apply -f $TEST_DEPLOYMENT
         echo "Listing all in namespace [$NAMESPACE]"
         kubectl get all -n $NAMESPACE
-        echo "Waiting for pod/$POD_NAME_SCALER to be ready"
         POD_NAME_SCALER=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
+        echo "Waiting for pod/$POD_NAME_SCALER to be ready"
         kubectl wait --for=condition=ready --timeout=600s pod/$POD_NAME_SCALER -n $NAMESPACE
         echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
         echo "Testing 0-to-1 scaling"
@@ -52,7 +52,7 @@ jobs:
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$METRIC_KEY" "10"
         echo "Setting $LAST_ACTION_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-        sleep 30s
+        sleep 10s
         echo "Listing all in namespace [$NAMESPACE]"
         kubectl get all -n $NAMESPACE
         POD_NAME_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
@@ -65,7 +65,7 @@ jobs:
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$METRIC_KEY" "50"
         echo "Setting $LAST_ACTION_KEY in Redis server"
         kubectl exec -n $NAMESPACE $POD_NAME_SCALER -c redis -- redis-cli set "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-        sleep 30s
+        sleep 10s
         echo "Listing all in namespace [$NAMESPACE]"
         kubectl get all -n $NAMESPACE
         POD_NAMES_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
