@@ -28,7 +28,7 @@ jobs:
       run: |
         IMAGE_NAME=$REPO_NAME:latest
         MICROK8S_IMAGE_NAME=$MICROK8S_DOCKER_REGISTRY_ADDR/$IMAGE_NAME
-        sed -i "s#$IMAGE_NAME#$MICROK8S_IMAGE_NAME#" deploy.yaml
+        sed -i "s#$IMAGE_NAME#$MICROK8S_IMAGE_NAME#" ./test/deploy.yaml
         echo "Building docker image [$MICROK8S_IMAGE_NAME]"
         docker build -t $MICROK8S_IMAGE_NAME .
         docker push $MICROK8S_IMAGE_NAME
