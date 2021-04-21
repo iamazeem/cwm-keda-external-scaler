@@ -32,8 +32,8 @@ docker images
 echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
 $KUBECTL apply -f $TEST_DEPLOYMENT
 sleep 60s
-echo "Listing all in namespace [$NAMESPACE]"
-$KUBECTL get all -n $NAMESPACE
+echo "Listing all in all namespaces"
+$KUBECTL get all --all-namespaces
 POD_NAME_SCALER=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
 echo "Waiting for pod/$POD_NAME_SCALER to be ready"
 $KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_SCALER" -n $NAMESPACE
@@ -61,9 +61,9 @@ echo "Setting $METRIC_KEY in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "10"
 echo "Setting $LAST_ACTION_KEY in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-sleep 60s
-echo "Listing all in namespace [$NAMESPACE]"
-$KUBECTL get all -n $NAMESPACE
+sleep 2m
+echo "Listing all in all namespaces"
+$KUBECTL get all --all-namespaces
 POD_NAME_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
 echo "Waiting for pod/$POD_NAME_TEST_APP to be ready"
 $KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_TEST_APP" -n $NAMESPACE
@@ -77,9 +77,9 @@ echo "Setting $METRIC_KEY in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "50"
 echo "Setting $LAST_ACTION_KEY in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-sleep 60s
-echo "Listing all in namespace [$NAMESPACE]"
-$KUBECTL get all -n $NAMESPACE
+sleep 2m
+echo "Listing all in all namespaces"
+$KUBECTL get all --all-namespaces
 POD_NAMES_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
 POD_NAMES_ARRAY=($POD_NAMES_TEST_APP)
 echo "Verifying pods' readiness"
