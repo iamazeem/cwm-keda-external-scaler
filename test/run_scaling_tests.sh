@@ -23,7 +23,7 @@ docker push "$MICROK8S_IMAGE_NAME"
 # Deploy
 echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
 kubectl apply -f $TEST_DEPLOYMENT
-sleep 60s
+sleep 120s
 echo "Listing all in namespace [$NAMESPACE]"
 kubectl get all -n $NAMESPACE
 POD_NAME_SCALER=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
@@ -34,11 +34,11 @@ echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
 echo "Pinging Redis server"
 REDIS_STATUS="down"
 for i in {1..5}; do
-    sleep 10s
     if kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli PING; then
         REDIS_STATUS="up"
         break
     fi
+    sleep 10s
 done
 
 if [[ "${REDIS_STATUS}" == "down" ]]; then
