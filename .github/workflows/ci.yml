@@ -9,22 +9,18 @@ on:
     - '**.md'
 
 jobs:
-  build-and-test:
+  test-and-push-image:
     name: Build and test external scaler
     runs-on: ubuntu-18.04
 
     steps:
     - uses: actions/checkout@v2
 
-    - uses: balchua/microk8s-actions@v0.2.1
-      with:
-        channel: '1.20/stable'
-        addons: '["dns", "rbac", "registry", "keda"]'
-
-    - name: Run scaling tests
+    - name: Test
       run: |
-        sudo microk8s status --wait-ready
+        sudo ./test/setup.sh
         ./test/run_scaling_tests.sh
+        ./test/teardown.sh
 
     - name: Push docker image to GitHub Packages
       if: github.ref == 'refs/heads/main'
@@ -32,14 +28,5 @@ jobs:
         USERNAME: ${{ github.actor }}
         PASSWORD: ${{ github.token }}
         REPO: ${{ github.repository }}
-        PKGS_URL: docker.pkg.github.com
-        SOURCE_IMAGE: cwm-keda-external-scaler
-        TAG: latest
       run: |
-        echo $PASSWORD | docker login https://docker.pkg.github.com -u $USERNAME --password-stdin
-        TARGET_IMAGE=$PKGS_URL/$REPO/$SOURCE_IMAGE:$TAG
-        docker tag $SOURCE_IMAGE $TARGET_IMAGE
-        docker images
-        echo "Pushing image [$TARGET_IMAGE]"
-        docker push $TARGET_IMAGE
-        echo "Docker image [$TARGET_IMAGE] pushed successfully!"
+        ./bin/push_docker_image.sh
