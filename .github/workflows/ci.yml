@@ -23,7 +23,7 @@ jobs:
 
     - name: Run scaling tests
       run: |
-        ./test/run_scaling_tests.sh
+        sudo ./test/run_scaling_tests.sh
 
     - name: Push docker image to GitHub Packages
       if: github.ref == 'refs/heads/main'
