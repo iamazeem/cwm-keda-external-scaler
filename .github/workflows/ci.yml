@@ -21,6 +21,7 @@ jobs:
       with:
         minikube version: 'v1.12.3'
         kubernetes version: 'v1.16.14'
+        driver: 'docker'
         github token: ${{ github.token }}
 
     - name: Test
