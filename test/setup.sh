@@ -8,7 +8,7 @@ cd ./bin
 pwd
 
 ./install_helm.sh && helm version
-./install_kubectl.sh && kubectl version
+./install_kubectl.sh && kubectl version --client
 ./install_minikube.sh && minikube version
 ./start_minikube.sh
 ./install_keda.sh
