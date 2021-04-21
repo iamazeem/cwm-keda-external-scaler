@@ -4,8 +4,7 @@ set -e
 
 echo "Running scaling tests..."
 
-SCALER_NAME="cwm-keda-external-scaler"
-IMAGE_NAME="$SCALER_NAME:latest"
+IMAGE_NAME="cwm-keda-external-scaler:latest"
 TEST_DEPLOYMENT="./test/deploy.yaml"
 NAMESPACE="cwm-keda-external-scaler-ns"
 
@@ -21,7 +20,11 @@ PREFIX_TEST_APP="test-app"
 ./bin/install_keda.sh
 
 # Build docker image
+echo "Logging in to docker registry"
+echo "$PASSWORD" | docker login https://docker.pkg.github.com -u "$USERNAME" --password-stdin
 docker build -t "$IMAGE_NAME" .
+docker push "$IMAGE_NAME"
+docker images
 
 # Deploy
 echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
