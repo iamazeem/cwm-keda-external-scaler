@@ -16,6 +16,10 @@ METRIC_KEY="deploymentid:minio-metrics:bytes_out"
 LAST_ACTION_KEY="deploymentid:last_action"
 PREFIX_TEST_APP="test-app"
 
+# Start minikube cluster and install keda
+./bin/start_minikube.sh
+./bin/install_keda.sh
+
 # Build docker image
 docker build -t "$IMAGE_NAME" .
 

@@ -9,20 +9,26 @@ on:
     - '**.md'
 
 jobs:
-  test-and-push-image:
-    name: Build and test external scaler
+  test-and-publish:
+    name: Build and publish external scaler
     runs-on: ubuntu-18.04
 
     steps:
     - uses: actions/checkout@v2
 
-    - name: Test
+    - name: Setup
       run: |
         sudo ./test/setup.sh
+
+    - name: Run test
+      run: |
         ./test/run_scaling_tests.sh
+
+    - name: Teardown
+      run: |
         ./test/teardown.sh
 
-    - name: Push docker image to GitHub Packages
+    - name: Publish docker image to GitHub Packages
       if: github.ref == 'refs/heads/main'
       env:
         USERNAME: ${{ github.actor }}
