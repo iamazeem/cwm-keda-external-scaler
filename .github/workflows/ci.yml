@@ -10,7 +10,7 @@ on:
 
 jobs:
   test-and-publish:
-    name: Build and publish external scaler
+    name: Build, test and publish
     runs-on: ubuntu-18.04
 
     steps:
@@ -22,7 +22,6 @@ jobs:
 
     - name: Test
       run: |
-        sudo ./bin/start_minikube.sh
         ./test/run_scaling_tests.sh
 
     - name: Teardown
