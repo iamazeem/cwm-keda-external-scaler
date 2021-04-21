@@ -19,9 +19,11 @@ PREFIX_TEST_APP="test-app"
 ./bin/start_minikube.sh
 ./bin/install_keda.sh
 
+eval "$(minikube docker-env)"
+
 # Build docker image
-echo "Logging in to docker registry"
-echo "$PASSWORD" | docker login https://docker.pkg.github.com -u "$USERNAME" --password-stdin
+# echo "Logging in to docker registry"
+# echo "$PASSWORD" | docker login https://docker.pkg.github.com -u "$USERNAME" --password-stdin
 docker build -t "$IMAGE_NAME" .
 # docker push "$IMAGE_NAME"
 docker images
