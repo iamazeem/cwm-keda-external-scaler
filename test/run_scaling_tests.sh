@@ -23,7 +23,7 @@ PREFIX_TEST_APP="test-app"
 echo "Logging in to docker registry"
 echo "$PASSWORD" | docker login https://docker.pkg.github.com -u "$USERNAME" --password-stdin
 docker build -t "$IMAGE_NAME" .
-docker push "$IMAGE_NAME"
+# docker push "$IMAGE_NAME"
 docker images
 
 # Deploy

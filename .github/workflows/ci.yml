@@ -29,6 +29,7 @@ jobs:
 
     - name: Test
       run: |
+        minikube kubectl -- get pods
         ./test/run_scaling_tests.sh
 
     - name: Publish
