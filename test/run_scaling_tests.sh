@@ -21,9 +21,10 @@ docker build -t "$MICROK8S_IMAGE_NAME" .
 docker push "$MICROK8S_IMAGE_NAME"
 
 # Deploy
+sudo snap alias microk8s.kubectl kubectl
 echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
 kubectl apply -f $TEST_DEPLOYMENT
-sleep 30s
+sleep 60s
 echo "Listing all in namespace [$NAMESPACE]"
 kubectl get all -n $NAMESPACE
 POD_NAME_SCALER=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
