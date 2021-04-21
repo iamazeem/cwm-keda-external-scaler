@@ -23,15 +23,27 @@ docker push "$MICROK8S_IMAGE_NAME"
 # Deploy
 echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
 kubectl apply -f $TEST_DEPLOYMENT
-sleep 10s
+sleep 30s
 echo "Listing all in namespace [$NAMESPACE]"
 kubectl get all -n $NAMESPACE
 POD_NAME_SCALER=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
 echo "Waiting for pod/$POD_NAME_SCALER to be ready"
 kubectl wait --for=condition=ready --timeout=600s "pod/$POD_NAME_SCALER" -n $NAMESPACE
 echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
+
 echo "Pinging Redis server"
-for i in {1..5}; do kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli PING && break; done
+REDIS_STATUS="down"
+for i in {1..5}; do
+    if kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli PING; then
+        REDIS_STATUS="up"
+        break
+    fi
+done
+
+if [[ "${REDIS_STATUS}" == "down" ]]; then
+    echo "ERROR: Redis server is down! Exiting..."
+    exit 1
+fi
 
 # Test
 echo
@@ -58,8 +70,7 @@ sleep 10s
 POD_NAMES_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
 POD_NAMES_ARRAY=($POD_NAMES_TEST_APP)
 echo "Verifying pods' readiness"
-for pod in "${POD_NAMES_ARRAY[@]}"
-do
+for pod in "${POD_NAMES_ARRAY[@]}"; do
     echo "Waiting for pod/$pod to be ready"
     kubectl wait --for=condition=ready --timeout=600s "pod/$pod" -n $NAMESPACE
 done
