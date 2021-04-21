@@ -19,7 +19,7 @@ jobs:
     - uses: balchua/microk8s-actions@v0.2.1
       with:
         channel: '1.20/stable'
-        addons: '["dns", "rbac", "registry", "keda"]'
+        addons: '["dns", "api-server", "registry", "keda"]'
 
     - name: Run scaling tests
       run: |
