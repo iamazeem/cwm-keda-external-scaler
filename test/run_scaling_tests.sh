@@ -22,10 +22,7 @@ PREFIX_TEST_APP="test-app"
 eval "$(minikube docker-env)"
 
 # Build docker image
-# echo "Logging in to docker registry"
-# echo "$PASSWORD" | docker login https://docker.pkg.github.com -u "$USERNAME" --password-stdin
 docker build -t "$IMAGE_NAME" .
-# docker push "$IMAGE_NAME"
 docker images
 
 # Deploy
@@ -61,7 +58,7 @@ echo "Setting $METRIC_KEY in Redis server"
 kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "10"
 echo "Setting $LAST_ACTION_KEY in Redis server"
 kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-sleep 10s
+sleep 30s
 POD_NAME_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
 echo "Waiting for pod/$POD_NAME_TEST_APP to be ready"
 kubectl wait --for=condition=ready --timeout=600s "pod/$POD_NAME_TEST_APP" -n $NAMESPACE
@@ -75,7 +72,7 @@ echo "Setting $METRIC_KEY in Redis server"
 kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "50"
 echo "Setting $LAST_ACTION_KEY in Redis server"
 kubectl exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-sleep 10s
+sleep 30s
 POD_NAMES_TEST_APP=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
 POD_NAMES_ARRAY=($POD_NAMES_TEST_APP)
 echo "Verifying pods' readiness"
