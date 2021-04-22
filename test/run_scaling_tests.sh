@@ -16,18 +16,22 @@ LAST_ACTION_KEY="deploymentid:last_action"
 PREFIX_TEST_APP="test-app"
 
 # Start minikube
+echo
 echo "Starting minikube"
 minikube start --driver=docker --kubernetes-version=v1.16.14
 minikube addons list
+sleep 30s
 
 eval "$(minikube -p minikube docker-env)"
 
 KUBECTL="minikube kubectl --"
 
+echo
 echo "kubectl version:"
 $KUBECTL version
 
 # Set up keda
+echo
 echo "keda: download, install and set up"
 
 helm repo add kedacore https://kedacore.github.io/charts
@@ -47,13 +51,14 @@ $KUBECTL wait --for=condition=ready --timeout=600s pod -l app=$KEDA_COMPONENT -n
 
 echo "SUCCESS: keda is ready!"
 
-$KUBECTL get all --all-namespaces
-
 # Build docker image
+echo
+echo "Building docker image [$IMAGE_NAME]"
 docker build -t "$IMAGE_NAME" .
 docker images
 
 # Deploy
+echo
 echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
 $KUBECTL apply -f $TEST_DEPLOYMENT
 sleep 60s
@@ -122,6 +127,7 @@ for pod in "${POD_NAMES_ARRAY[@]}"; do
 done
 echo "SUCCESS: Multiple pods scaling [1-to-4] completed"
 
+echo
 echo "Deleting namespace [$NAMESPACE]"
 $KUBECTL delete ns $NAMESPACE
 
