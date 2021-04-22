@@ -4,6 +4,8 @@ set -e
 
 echo "Running scaling tests..."
 
+KEDA_DEPLOYMENT="https://github.com/kedacore/keda/releases/download/v2.1.0/keda-2.1.0.yaml"
+
 IMAGE_NAME="cwm-keda-external-scaler:latest"
 TEST_DEPLOYMENT="./test/deploy.yaml"
 NAMESPACE="cwm-keda-external-scaler-ns"
@@ -15,6 +17,8 @@ METRIC_KEY="deploymentid:minio-metrics:bytes_out"
 LAST_ACTION_KEY="deploymentid:last_action"
 PREFIX_TEST_APP="test-app"
 
+# Setup
+
 minikube status
 
 eval "$(minikube -p minikube docker-env)"
@@ -25,15 +29,15 @@ echo
 echo "kubectl version:"
 $KUBECTL version
 
-# Set up keda
+# Set up KEDA
 echo
 echo "Set up keda"
-$KUBECTL apply -f https://github.com/kedacore/keda/releases/download/v2.1.0/keda-2.1.0.yaml
+$KUBECTL apply -f $KEDA_DEPLOYMENT
 sleep 1m
 
-for pod in "keda-operator" "keda-operator-metrics-apiserver"; do
+for pod in "keda-operator" "keda-metrics-apiserver"; do
     echo "Waiting for pod/$pod to be ready"
-    $KUBECTL wait --for=condition=ready --timeout=600s "pod/$pod" -n keda
+    $KUBECTL wait --for=condition=ready --timeout=600s pod -l app=$pod -n keda
 done
 
 echo "SUCCESS: keda is ready!"
@@ -48,7 +52,7 @@ docker images
 echo
 echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
 $KUBECTL apply -f $TEST_DEPLOYMENT
-sleep 5m
+sleep 1m
 echo "Listing all in all namespaces"
 $KUBECTL get all -n $NAMESPACE
 echo "Checking HPA in namespace $NAMESPACE"
@@ -103,7 +107,7 @@ echo "Setting $METRIC_KEY in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "10"
 echo "Setting $LAST_ACTION_KEY in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-sleep 20s
+sleep 30s
 echo "Listing all in all namespaces"
 $KUBECTL get all --all-namespaces
 echo "Checking HPA in namespace $NAMESPACE"
@@ -118,25 +122,28 @@ echo "SUCCESS: Zero-to-one scaling [0-to-1] completed"
 echo
 echo "TEST # 2: Multiple pods scaling [1-to-4]"
 echo "Setting $METRIC_KEY in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "90"
+$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "50"
 echo "Setting $LAST_ACTION_KEY in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-sleep 20s
+sleep 1m
 echo "Listing all in all namespaces"
 $KUBECTL get all --all-namespaces
 echo "Checking HPA in namespace $NAMESPACE"
 $KUBECTL describe hpa -n $NAMESPACE
 POD_NAMES_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
 POD_NAMES_ARRAY=($POD_NAMES_TEST_APP)
-echo "Verifying pods' readiness"
 for pod in "${POD_NAMES_ARRAY[@]}"; do
     echo "Waiting for pod/$pod to be ready"
     $KUBECTL wait --for=condition=ready --timeout=600s "pod/$pod" -n $NAMESPACE
 done
 echo "SUCCESS: Multiple pods scaling [1-to-4] completed"
 
+# Teardown
 echo
 echo "Deleting namespace [$NAMESPACE]"
 $KUBECTL delete ns $NAMESPACE
+
+echo "Deleting keda deployment"
+$KUBECTL delete -f $KEDA_DEPLOYMENT
 
 echo "SUCCESS: Scaling tests completed successfully!"
