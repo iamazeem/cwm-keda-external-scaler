@@ -18,7 +18,9 @@ PREFIX_TEST_APP="test-app"
 # Start minikube
 echo "Starting minikube"
 minikube start --driver=docker --kubernetes-version=v1.16.14
-eval "$(minikube docker-env)"
+minikube addons list
+
+eval "$(minikube -p minikube docker-env)"
 
 KUBECTL="minikube kubectl --"
 
@@ -57,6 +59,8 @@ $KUBECTL apply -f $TEST_DEPLOYMENT
 sleep 60s
 echo "Listing all in all namespaces"
 $KUBECTL get all --all-namespaces
+echo "Describing HPA from namespace $NAMESPACE"
+$KUBECTL describe hpa -n $NAMESPACE
 POD_NAME_SCALER=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
 echo "Waiting for pod/$POD_NAME_SCALER to be ready"
 $KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_SCALER" -n $NAMESPACE
@@ -86,9 +90,11 @@ echo "Setting $METRIC_KEY in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "10"
 echo "Setting $LAST_ACTION_KEY in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-sleep 2m
+sleep 30s
 echo "Listing all in all namespaces"
 $KUBECTL get all --all-namespaces
+echo "Describing HPA from namespace $NAMESPACE"
+$KUBECTL describe hpa -n $NAMESPACE
 POD_NAME_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
 echo "Waiting for pod/$POD_NAME_TEST_APP to be ready"
 $KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_TEST_APP" -n $NAMESPACE
@@ -99,12 +105,14 @@ echo "SUCCESS: Zero-to-one scaling [0-to-1] completed"
 echo
 echo "TEST # 2: Multiple pods scaling [1-to-4]"
 echo "Setting $METRIC_KEY in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "50"
+$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "90"
 echo "Setting $LAST_ACTION_KEY in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-sleep 2m
+sleep 60s
 echo "Listing all in all namespaces"
 $KUBECTL get all --all-namespaces
+echo "Describing HPA from namespace $NAMESPACE"
+$KUBECTL describe hpa -n $NAMESPACE
 POD_NAMES_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
 POD_NAMES_ARRAY=($POD_NAMES_TEST_APP)
 echo "Verifying pods' readiness"
