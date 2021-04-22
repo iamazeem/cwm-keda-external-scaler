@@ -29,7 +29,7 @@ $KUBECTL version
 echo
 echo "Set up keda"
 $KUBECTL apply -f https://github.com/kedacore/keda/releases/download/v2.1.0/keda-2.1.0.yaml
-sleep 30s
+sleep 1m
 
 for pod in "keda-operator" "keda-operator-metrics-apiserver"; do
     echo "Waiting for pod/$pod to be ready"
