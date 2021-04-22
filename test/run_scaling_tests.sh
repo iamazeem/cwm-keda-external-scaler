@@ -27,17 +27,14 @@ $KUBECTL version
 
 # Set up keda
 echo
-echo "keda: download, install and set up"
-kubectl apply -f https://github.com/kedacore/keda/releases/download/v2.1.0/keda-2.1.0.yaml
+echo "Set up keda"
+$KUBECTL apply -f https://github.com/kedacore/keda/releases/download/v2.1.0/keda-2.1.0.yaml
+sleep 30s
 
-KEDA_NAMESPACE="keda"
-KEDA_COMPONENT="keda-operator"
-echo "Waiting for $KEDA_COMPONENT to be ready"
-$KUBECTL wait --for=condition=ready --timeout=600s pod -l app=$KEDA_COMPONENT -n $KEDA_NAMESPACE
-
-KEDA_COMPONENT="keda-operator-metrics-apiserver"
-echo "Waiting for $KEDA_COMPONENT to be ready"
-$KUBECTL wait --for=condition=ready --timeout=600s pod -l app=$KEDA_COMPONENT -n $KEDA_NAMESPACE
+for pod in "keda-operator" "keda-operator-metrics-apiserver"; do
+    echo "Waiting for pod/$pod to be ready"
+    $KUBECTL wait --for=condition=ready --timeout=600s "pod/$pod" -n keda
+done
 
 echo "SUCCESS: keda is ready!"
 
