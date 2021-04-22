@@ -20,9 +20,10 @@ PREFIX_TEST_APP="test-app"
 ./bin/install_keda.sh
 
 KUBECTL="minikube kubectl --"
+$KUBECTL version
 
 eval "$(minikube docker-env)"
-$KUBECTL get pods
+$KUBECTL get all --all-namespaces
 
 # Build docker image
 docker build -t "$IMAGE_NAME" .
@@ -91,7 +92,5 @@ echo "SUCCESS: Multiple pods scaling [1-to-4] completed"
 
 echo "Deleting namespace [$NAMESPACE]"
 $KUBECTL delete ns $NAMESPACE
-
-minikube delete --all
 
 echo "SUCCESS: Scaling tests completed successfully!"
