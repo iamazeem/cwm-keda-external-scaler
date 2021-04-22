@@ -2,10 +2,12 @@
 
 set -e
 
-# Required CI environment variables:
-# USERNAME: ${{ github.actor }}
-# PASSWORD: ${{ github.token }}
-# REPO: ${{ github.repository }}
+eval "$(minikube -p minikube docker-env)"
+
+# Required environment variables:
+#  USERNAME: ${{ github.actor }}
+#  PASSWORD: ${{ github.token }}
+#  REPO: ${{ github.repository }}
 
 PKGS_URL="docker.pkg.github.com"
 SOURCE_IMAGE="cwm-keda-external-scaler"

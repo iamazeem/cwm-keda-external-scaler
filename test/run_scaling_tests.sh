@@ -25,7 +25,6 @@ eval "$(minikube -p minikube docker-env)"
 
 KUBECTL="minikube kubectl --"
 
-echo
 echo "kubectl version:"
 $KUBECTL version
 
@@ -55,8 +54,6 @@ $KUBECTL apply -f $TEST_DEPLOYMENT
 sleep 1m
 echo "Listing all in all namespaces"
 $KUBECTL get all -n $NAMESPACE
-echo "Checking HPA in namespace $NAMESPACE"
-$KUBECTL describe hpa -n $NAMESPACE
 POD_NAME_SCALER=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
 echo "Waiting for pod/$POD_NAME_SCALER to be ready"
 $KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_SCALER" -n $NAMESPACE
