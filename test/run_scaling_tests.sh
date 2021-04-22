@@ -68,7 +68,7 @@ echo
 echo "Waiting for HPA to be ready [No. of tries: 5]"
 HPA_STATUS="down"
 for i in {1..5}; do
-    HPA_OUTPUT="$KUBECTL describe hpa -n $NAMESPACE"
+    HPA_OUTPUT="$($KUBECTL describe hpa -n $NAMESPACE)"
     if [[ "$HPA_OUTPUT" != "" ]]; then
         echo "$HPA_OUTPUT"
         HPA_STATUS="up"
