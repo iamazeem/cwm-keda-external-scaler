@@ -28,14 +28,9 @@ $KUBECTL version
 # Set up keda
 echo
 echo "keda: download, install and set up"
-
-helm repo add kedacore https://kedacore.github.io/charts
-helm repo update
+kubectl apply -f https://github.com/kedacore/keda/releases/download/v2.1.0/keda-2.1.0.yaml
 
 KEDA_NAMESPACE="keda"
-$KUBECTL create namespace $KEDA_NAMESPACE
-helm install keda kedacore/keda --version 2.1.0 --namespace $KEDA_NAMESPACE
-
 KEDA_COMPONENT="keda-operator"
 echo "Waiting for $KEDA_COMPONENT to be ready"
 $KUBECTL wait --for=condition=ready --timeout=600s pod -l app=$KEDA_COMPONENT -n $KEDA_NAMESPACE
