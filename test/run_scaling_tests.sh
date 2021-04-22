@@ -15,14 +15,36 @@ METRIC_KEY="deploymentid:minio-metrics:bytes_out"
 LAST_ACTION_KEY="deploymentid:last_action"
 PREFIX_TEST_APP="test-app"
 
-# Start minikube cluster and install keda
-./bin/start_minikube.sh
-./bin/install_keda.sh
+# Start minikube
+echo "Starting minikube"
+minikube start --driver=docker --kubernetes-version=v1.16.14
+eval "$(minikube docker-env)"
 
 KUBECTL="minikube kubectl --"
+
+echo "kubectl version:"
 $KUBECTL version
 
-eval "$(minikube docker-env)"
+# Set up keda
+echo "keda: download, install and set up"
+
+helm repo add kedacore https://kedacore.github.io/charts
+helm repo update
+
+KEDA_NAMESPACE="keda"
+$KUBECTL create namespace $KEDA_NAMESPACE
+helm install keda kedacore/keda --version 2.1.0 --namespace $KEDA_NAMESPACE
+
+KEDA_COMPONENT="keda-operator"
+echo "Waiting for $KEDA_COMPONENT to be ready"
+$KUBECTL wait --for=condition=ready --timeout=600s pod -l app=$KEDA_COMPONENT -n $KEDA_NAMESPACE
+
+KEDA_COMPONENT="keda-operator-metrics-apiserver"
+echo "Waiting for $KEDA_COMPONENT to be ready"
+$KUBECTL wait --for=condition=ready --timeout=600s pod -l app=$KEDA_COMPONENT -n $KEDA_NAMESPACE
+
+echo "SUCCESS: keda is ready!"
+
 $KUBECTL get all --all-namespaces
 
 # Build docker image
@@ -40,6 +62,8 @@ echo "Waiting for pod/$POD_NAME_SCALER to be ready"
 $KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_SCALER" -n $NAMESPACE
 echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
 
+# Ping Redis server before proceeding with tests
+echo
 echo "Pinging Redis server"
 REDIS_STATUS="down"
 for i in {1..5}; do
