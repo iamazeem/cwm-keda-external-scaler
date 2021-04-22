@@ -187,6 +187,18 @@ docker build -t cwm-keda-external-scaler:latest .
 
 ## Testing
 
+### Prerequisite
+
+Make sure that KEDA is already deployed and running (use v2.1.0 via YAML file):
+
+```shell
+# apply
+kubectl apply -f https://github.com/kedacore/keda/releases/download/v2.1.0/keda-2.1.0.yaml
+
+# delete
+kubectl delete -f https://github.com/kedacore/keda/releases/download/v2.1.0/keda-2.1.0.yaml
+```
+
 ### Deploy
 
 Terminal-1: Watch resources in all the namespaces
