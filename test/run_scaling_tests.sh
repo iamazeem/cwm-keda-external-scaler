@@ -15,11 +15,7 @@ METRIC_KEY="deploymentid:minio-metrics:bytes_out"
 LAST_ACTION_KEY="deploymentid:last_action"
 PREFIX_TEST_APP="test-app"
 
-# Start minikube
-# echo
-# echo "Starting minikube"
-# minikube start --driver=docker --kubernetes-version=v1.16.14
-minikube addons list
+minikube status
 
 eval "$(minikube -p minikube docker-env)"
 
@@ -50,7 +46,7 @@ $KUBECTL wait --for=condition=ready --timeout=600s pod -l app=$KEDA_COMPONENT -n
 
 echo "SUCCESS: keda is ready!"
 
-# Build docker image
+# Build
 echo
 echo "Building docker image [$IMAGE_NAME]"
 docker build -t "$IMAGE_NAME" .
@@ -60,19 +56,39 @@ docker images
 echo
 echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
 $KUBECTL apply -f $TEST_DEPLOYMENT
-sleep 30s
+sleep 5m
 echo "Listing all in all namespaces"
 $KUBECTL get all -n $NAMESPACE
-echo "Getting HPA from namespace $NAMESPACE"
-$KUBECTL get hpa -n $NAMESPACE
+echo "Checking HPA in namespace $NAMESPACE"
+$KUBECTL describe hpa -n $NAMESPACE
 POD_NAME_SCALER=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
 echo "Waiting for pod/$POD_NAME_SCALER to be ready"
 $KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_SCALER" -n $NAMESPACE
-echo "SUCCESS: pod [$POD_NAME_SCALER] is ready"
-
-# Ping Redis server before proceeding with tests
 echo
-echo "Pinging Redis server"
+echo "Waiting for HPA to be ready [No. of tries: 5]"
+HPA_STATUS="down"
+for i in {1..5}; do
+    HPA_OUTPUT="$KUBECTL describe hpa -n $NAMESPACE"
+    if [[ "$HPA_OUTPUT" != "" ]]; then
+        echo "$HPA_OUTPUT"
+        HPA_STATUS="up"
+        break
+    fi
+    echo "HPA is not ready yet!"
+    sleep 1m
+done
+
+if [[ "${HPA_STATUS}" == "down" ]]; then
+    echo "ERROR: HPA is down! Exiting..."
+    $KUBECTL cluster-info dump
+    exit 1
+fi
+
+echo "SUCCESS: scaler [$POD_NAME_SCALER] is ready"
+
+# Ping Redis server
+echo
+echo "Pinging Redis server [No. of tries: 5]"
 REDIS_STATUS="down"
 for i in {1..5}; do
     if $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli PING; then
@@ -84,6 +100,7 @@ done
 
 if [[ "${REDIS_STATUS}" == "down" ]]; then
     echo "ERROR: Redis server is down! Exiting..."
+    $KUBECTL cluster-info dump
     exit 1
 fi
 
@@ -97,7 +114,7 @@ $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_
 sleep 20s
 echo "Listing all in all namespaces"
 $KUBECTL get all --all-namespaces
-echo "Describing HPA from namespace $NAMESPACE"
+echo "Checking HPA in namespace $NAMESPACE"
 $KUBECTL describe hpa -n $NAMESPACE
 POD_NAME_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
 echo "Waiting for pod/$POD_NAME_TEST_APP to be ready"
@@ -115,7 +132,7 @@ $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_
 sleep 20s
 echo "Listing all in all namespaces"
 $KUBECTL get all --all-namespaces
-echo "Describing HPA from namespace $NAMESPACE"
+echo "Checking HPA in namespace $NAMESPACE"
 $KUBECTL describe hpa -n $NAMESPACE
 POD_NAMES_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
 POD_NAMES_ARRAY=($POD_NAMES_TEST_APP)
