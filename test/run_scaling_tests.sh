@@ -16,10 +16,9 @@ LAST_ACTION_KEY="deploymentid:last_action"
 PREFIX_TEST_APP="test-app"
 
 # Start minikube
-echo
-echo "Starting minikube"
-minikube start --driver=docker --kubernetes-version=v1.16.14
-minikube addons enable metrics-server
+# echo
+# echo "Starting minikube"
+# minikube start --driver=docker --kubernetes-version=v1.16.14
 minikube addons list
 
 eval "$(minikube -p minikube docker-env)"
@@ -63,9 +62,9 @@ echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
 $KUBECTL apply -f $TEST_DEPLOYMENT
 sleep 30s
 echo "Listing all in all namespaces"
-$KUBECTL get all --all-namespaces
-echo "Describing HPA from namespace $NAMESPACE"
-$KUBECTL describe hpa -n $NAMESPACE
+$KUBECTL get all -n $NAMESPACE
+echo "Getting HPA from namespace $NAMESPACE"
+$KUBECTL get hpa -n $NAMESPACE
 POD_NAME_SCALER=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
 echo "Waiting for pod/$POD_NAME_SCALER to be ready"
 $KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_SCALER" -n $NAMESPACE

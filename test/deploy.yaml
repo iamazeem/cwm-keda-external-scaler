@@ -105,7 +105,7 @@ spec:
     - type: external
       metadata:
         scalerAddress: cwm-keda-external-scaler.cwm-keda-external-scaler-ns:50051
-        isActiveTtlSeconds: "30"
-        scalePeriodSeconds: "30"
+        isActiveTtlSeconds: "60"
+        scalePeriodSeconds: "60"
         scaleMetricName: "bytes_out"
         targetValue: "10"
