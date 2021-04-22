@@ -1,13 +1,5 @@
 # Testing
 
-## Prerequisites
-
-| Software      | Version       |
-|:-------------:|:-------------:|
-| minikube      | v1.12.3       |
-| Kubernetes    | v1.16.4       |
-| KEDA          | v2.1.0        |
-
 ## Important
 
 - The [CI workflow](./../.github/workflows/ci.yml) is kept to minimal. The

@@ -189,6 +189,12 @@ docker build -t cwm-keda-external-scaler:latest .
 
 ### Prerequisite
 
+| Software      | Version       |
+|:-------------:|:-------------:|
+| minikube      | v1.12.3       |
+| Kubernetes    | v1.16.4       |
+| KEDA          | v2.1.0        |
+
 Make sure that KEDA is already deployed and running (use v2.1.0 via YAML file):
 
 ```shell
@@ -201,31 +207,31 @@ kubectl delete -f https://github.com/kedacore/keda/releases/download/v2.1.0/keda
 
 ### Deploy
 
-Terminal-1: Watch resources in all the namespaces
+**Terminal-1**: Watch resources in all the namespaces
 
 ```shell
 watch -x kubectl get all --all-namespaces
 ```
 
-Terminal-2: Apply test [deployment](./test/deploy.yaml)
+**Terminal-2**: Apply test [deployment](./test/deploy.yaml)
 
 ```shell
 kubectl apply -f ./test/deploy.yaml
 ```
 
-Terminal-3: Check logs of `pod/keda-operator-*` in `keda` namespace
+**Terminal-3**: Check logs of `pod/keda-operator-*` in `keda` namespace
 
 ```shell
 kubectl logs -f -n keda pod/keda-operator-*
 ```
 
-Terminal-4: Check logs of `pod/keda-operator-metrics-apiserver-*` in `keda` namespace
+**Terminal-4**: Check logs of `pod/keda-operator-metrics-apiserver-*` in `keda` namespace
 
 ```shell
 kubectl logs -f pod/keda-operator-metrics-apiserver-* -n keda
 ```
 
-Terminal-5: Check logs of the custom external scaler `cwm-keda-external-scaler`
+**Terminal-5**: Check logs of the custom external scaler `cwm-keda-external-scaler`
 
 ```shell
 kubectl logs -f -n cwm-keda-external-scaler-ns pod/cwm-keda-external-scaler-* cwm-keda-external-scaler
@@ -234,7 +240,7 @@ kubectl logs -f -n cwm-keda-external-scaler-ns pod/cwm-keda-external-scaler-* cw
 **NOTE**: The trailing `*` in above `pod/<pod-name>-*` format denotes the actual
 complete name of the pod.
 
-For more details, take a look at [CI test script](./test/run_scaling_tests.sh).
+For more details, please navigate to [test](./test) subdirectory.
 
 ## Contribute
 
