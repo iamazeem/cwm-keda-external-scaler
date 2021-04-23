@@ -89,6 +89,10 @@ func getMetrics(metadata map[string]string) (metric, error) {
 	log.Printf("new metric value: %v", newMetric.value)
 
 	metricValueDiff := newMetric.value - oldMetricValue
+	if metricValueDiff < 0 {
+		return metric{}, status.Errorf(codes.InvalidArgument, "invalid metric value: %v, must be positive", metricValueDiff)
+	}
+
 	log.Printf("returning metrics: { name: %v, value: %v }", newMetric.name, metricValueDiff)
 
 	return metric{newMetric.name, metricValueDiff}, nil
