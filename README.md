@@ -111,14 +111,16 @@ The following table lists the supported local configuration:
 
 Here are the supported options for `scaleMetricName`:
 
-1. `bytes_in`
-2. `bytes_out` (default)
-3. `num_requests_in`
-4. `num_requests_out`
-5. `num_requests_misc`
-6. `bytes_total` (`bytes_in` + `bytes_out`)
-7. `num_requests_in_out` (`num_requests_in` + `num_requests_out`)
-8. `num_requests_total` (`num_requests_in` + `num_requests_out` + `num_requests_misc`)
+| Metric Name                   | Description                                                             |
+|:-----------------------------:|:------------------------------------------------------------------------|
+| `bytes_in`                    | number of incoming bytes                                                |
+| `bytes_out`                   | number of outgoing bytes (default)                                      |
+| `num_requests_in`             | number of incoming requests (`WepUpload`, `PutObject`, `DeleteObject`)  |
+| `num_requests_out`            | number of outgoing requests (`WebDownload`, `GetObject`)                |
+| `num_requests_misc`           | number of requests other than input and output                          |
+| `bytes_total`                 | `bytes_in` + `bytes_out`                                                |
+| `num_requests_in_out`         | `num_requests_in` + `num_requests_out`                                  |
+| `num_requests_total`          | `num_requests_in` + `num_requests_out` + `num_requests_misc`            |
 
 ### Sample Configuration
 
