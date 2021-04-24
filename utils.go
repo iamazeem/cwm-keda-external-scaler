@@ -18,12 +18,25 @@ type metric struct {
 
 func getEnv(key, defaultValue string) string {
 	key = strings.TrimSpace(key)
-	log.Printf("getting environment variable: '%v', default = '%v'", key, defaultValue)
+	log.Printf("getting environment variable: '%v' [default: %v]", key, defaultValue)
 	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
-		log.Printf("got: %v = %v", key, value)
+		log.Printf("got: [%v = %v]", key, value)
 		return value
 	} else {
-		log.Printf("got: %v = %v (default)", key, defaultValue)
+		log.Printf("got: [%v = %v] (default)", key, defaultValue)
+		return defaultValue
+	}
+}
+
+func getValueFromScalerMetadata(metadata map[string]string, key, defaultValue string) string {
+	key = strings.TrimSpace(key)
+	log.Printf("getting metadata: '%v' [default: %v]", key, defaultValue)
+	if value, exists := metadata[key]; exists {
+		value = strings.TrimSpace(value)
+		log.Printf("got: [%v = %v]", key, value)
+		return value
+	} else {
+		log.Printf("got: [%v = %v] (default)", key, defaultValue)
 		return defaultValue
 	}
 }
@@ -48,19 +61,6 @@ func getMetricsPrefix(metadata map[string]string) string {
 	}
 
 	return metricsPrefix
-}
-
-func getValueFromScalerMetadata(metadata map[string]string, key, defaultValue string) string {
-	key = strings.TrimSpace(key)
-	log.Printf("getting metadata: '%v', default = '%v'", key, defaultValue)
-	if value, exists := metadata[key]; exists {
-		value = strings.TrimSpace(value)
-		log.Printf("got: %v = %v", key, value)
-		return value
-	} else {
-		log.Printf("got: %v = %v (default)", key, defaultValue)
-		return defaultValue
-	}
 }
 
 // IsActive utility functions
@@ -167,7 +167,7 @@ func getNumRequestsTotal(metricsPrefix string) (int64, error) {
 }
 
 func getMetric(metadata map[string]string) (metric, error) {
-	log.Println("getting metric { name, value }")
+	log.Println("getting metric {name, value}")
 
 	var scaleMetricValue int64 = 0
 	var err error = nil
@@ -191,7 +191,7 @@ func getMetric(metadata map[string]string) (metric, error) {
 		return metric{}, err
 	}
 
-	log.Printf("returning metric: { name: %v, value: %v }", scaleMetricName, scaleMetricValue)
+	log.Printf("returning metric {name: %v, value: %v}", scaleMetricName, scaleMetricValue)
 
 	return metric{scaleMetricName, scaleMetricValue}, nil
 }

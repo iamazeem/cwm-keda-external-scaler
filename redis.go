@@ -93,7 +93,7 @@ func getValueFromRedisServer(key string) (string, bool) {
 		return val, false
 	}
 
-	log.Printf("got: %v = %v", key, val)
+	log.Printf("got: [%v = %v]", key, val)
 
 	return val, true
 }

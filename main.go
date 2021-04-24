@@ -29,21 +29,19 @@ func isActive(metadata map[string]string) (bool, error) {
 		return false, err
 	}
 
-	// add metric value in cache
-	m, err := getMetric(metadata)
+	deploymentid := getValueFromScalerMetadata(metadata, keyDeploymentId, defaultDeploymentId)
+
+	metric, err := getMetric(metadata)
 	if err != nil {
 		return false, err
 	}
 
-	cache.append(m.value)
-
-	// purge metric values from cache older than scale period seconds ago
 	scalePeriodSeconds, err := getScalePeriodSeconds(metadata)
 	if err != nil {
 		return false, err
 	}
 
-	cache.purge(scalePeriodSeconds)
+	cache.append(deploymentid, metric, scalePeriodSeconds)
 
 	// determine activeness
 	active := int64(time.Since(lastUpdateTime).Seconds()) < isActiveTtlSeconds
@@ -53,7 +51,7 @@ func isActive(metadata map[string]string) (bool, error) {
 }
 
 func getMetricSpec(metadata map[string]string) (metric, error) {
-	log.Println("getting metric spec { metric name, target value }")
+	log.Println("getting metric spec {metric name, target value}")
 
 	scaleMetricName := getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
 
@@ -65,15 +63,16 @@ func getMetricSpec(metadata map[string]string) (metric, error) {
 		return metric{}, status.Errorf(codes.InvalidArgument, "invalid value: %v => %v", keyTargetValue, targetValue)
 	}
 
-	log.Printf("returning metric spec: { metric name: %v, target value: %v }", scaleMetricName, targetValue)
+	log.Printf("returning metric spec {metric name: %v, target value: %v}", scaleMetricName, targetValue)
 
 	return metric{scaleMetricName, targetValue}, nil
 }
 
-func getMetrics(metadata map[string]string) (metric, error) {
-	log.Println("getting metrics { name, value }")
+func getMetrics(metadata map[string]string, inMetricName string) (metric, error) {
+	log.Println("getting metrics {name, value}")
 
-	oldMetricData, err := cache.getOldestMetricData()
+	deploymentid := getValueFromScalerMetadata(metadata, keyDeploymentId, defaultDeploymentId)
+	oldMetricData, err := cache.getOldestMetricData(deploymentid)
 	if err != nil {
 		return metric{}, err
 	}
@@ -83,7 +82,11 @@ func getMetrics(metadata map[string]string) (metric, error) {
 		return metric{}, err
 	}
 
-	oldMetricValue := oldMetricData.metricValue
+	if newMetric.name != inMetricName {
+		return metric{}, status.Errorf(codes.InvalidArgument, "%v changed [%v => %v]", keyScaleMetricName, newMetric.name, inMetricName)
+	}
+
+	oldMetricValue := oldMetricData.metric.value
 	log.Printf("old metric value: %v", oldMetricValue)
 
 	log.Printf("new metric value: %v", newMetric.value)
@@ -93,7 +96,7 @@ func getMetrics(metadata map[string]string) (metric, error) {
 		return metric{}, status.Errorf(codes.InvalidArgument, "invalid metric value: %v, must be positive", metricValueDiff)
 	}
 
-	log.Printf("returning metrics: { name: %v, value: %v }", newMetric.name, metricValueDiff)
+	log.Printf("returning metrics {name: %v, value: %v}", newMetric.name, metricValueDiff)
 
 	return metric{newMetric.name, metricValueDiff}, nil
 }
@@ -118,29 +121,29 @@ func (s *externalScalerServer) StreamIsActive(in *pb.ScaledObjectRef, stream pb.
 }
 
 func (s *externalScalerServer) GetMetricSpec(_ context.Context, in *pb.ScaledObjectRef) (*pb.GetMetricSpecResponse, error) {
-	m, err := getMetricSpec(in.ScalerMetadata)
+	metric, err := getMetricSpec(in.ScalerMetadata)
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.GetMetricSpecResponse{
 		MetricSpecs: []*pb.MetricSpec{{
-			MetricName: m.name,
-			TargetSize: m.value,
+			MetricName: metric.name,
+			TargetSize: metric.value,
 		}},
 	}, nil
 }
 
 func (s *externalScalerServer) GetMetrics(_ context.Context, in *pb.GetMetricsRequest) (*pb.GetMetricsResponse, error) {
-	m, err := getMetrics(in.ScaledObjectRef.ScalerMetadata)
+	metric, err := getMetrics(in.ScaledObjectRef.ScalerMetadata, in.MetricName)
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.GetMetricsResponse{
 		MetricValues: []*pb.MetricValue{{
-			MetricName:  m.name,
-			MetricValue: m.value,
+			MetricName:  metric.name,
+			MetricValue: metric.value,
 		}},
 	}, nil
 }

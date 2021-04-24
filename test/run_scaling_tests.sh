@@ -10,15 +10,24 @@ IMAGE_NAME="cwm-keda-external-scaler:latest"
 TEST_DEPLOYMENT="./test/deploy.yaml"
 NAMESPACE="cwm-keda-external-scaler-ns"
 
+# Time constants
+
 TZ="UTC"
 FMT_DATETIME="%Y-%m-%dT%H:%M:%S.%8NZ"
 
-METRIC_KEY="deploymentid:minio-metrics:bytes_out"
-LAST_ACTION_KEY="deploymentid:last_action"
-PREFIX_TEST_APP="test-app"
+# Test constants
+
+DEPLOYMENT_ID_1="deploymentid1"
+LAST_ACTION_KEY_1="$DEPLOYMENT_ID_1:last_action"
+METRIC_NAME_1="bytes_out"
+METRIC_KEY_1="$DEPLOYMENT_ID_1:minio-metrics:$METRIC_NAME_1"
+METRIC_NAME_1_NEW="bytes_in"
+METRIC_KEY_1_NEW="$DEPLOYMENT_ID_1:minio-metrics:$METRIC_NAME_1_NEW"
+PREFIX_TEST_APP_1="test-app1"
 
 # Setup
 
+minikube version
 minikube status
 
 eval "$(minikube -p minikube docker-env)"
@@ -34,9 +43,11 @@ echo "Set up keda"
 $KUBECTL apply -f $KEDA_DEPLOYMENT
 sleep 1m
 
-for pod in "keda-operator" "keda-metrics-apiserver"; do
+KEDA_NAMESPACE="keda"
+KEDA_PODS=("keda-operator" "keda-metrics-apiserver")
+for pod in "${KEDA_PODS[@]}"; do
     echo "Waiting for pod/$pod to be ready"
-    $KUBECTL wait --for=condition=ready --timeout=600s pod -l app=$pod -n keda
+    $KUBECTL wait --for=condition=ready --timeout=600s pod -l app="$pod" -n $KEDA_NAMESPACE
 done
 
 echo "SUCCESS: keda is ready!"
@@ -52,7 +63,7 @@ echo
 echo "Deploying test deployment [$TEST_DEPLOYMENT] with ScaledObject"
 $KUBECTL apply -f $TEST_DEPLOYMENT
 sleep 1m
-echo "Listing all in all namespaces"
+echo "Listing all in namespace [$NAMESPACE]"
 $KUBECTL get all -n $NAMESPACE
 POD_NAME_SCALER=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
 echo "Waiting for pod/$POD_NAME_SCALER to be ready"
@@ -72,7 +83,9 @@ for i in {1..5}; do
 done
 
 if [[ "${HPA_STATUS}" == "down" ]]; then
-    echo "ERROR: HPA is down! Exiting..."
+    echo
+    echo -e "ERROR: HPA is down!"
+    echo
     $KUBECTL cluster-info dump
     exit 1
 fi
@@ -92,55 +105,116 @@ for i in {1..5}; do
 done
 
 if [[ "${REDIS_STATUS}" == "down" ]]; then
-    echo "ERROR: Redis server is down! Exiting..."
+    echo
+    echo "ERROR: Redis server is down!"
+    echo
     $KUBECTL cluster-info dump
     exit 1
 fi
 
-# Test
+# --- TESTS - START ---
+
+# Test # 1
 echo
 echo "TEST # 1: Zero-to-one scaling [0-to-1]"
-echo "Setting $METRIC_KEY in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "10"
-echo "Setting $LAST_ACTION_KEY in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
+echo "Setting $METRIC_KEY_1 in Redis server"
+$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY_1" "10"
+echo "Setting $LAST_ACTION_KEY_1 in Redis server"
+$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
 sleep 30s
-echo "Listing all in all namespaces"
-$KUBECTL get all --all-namespaces
-echo "Checking HPA in namespace $NAMESPACE"
+echo "Listing all in namespace [$NAMESPACE]"
+$KUBECTL get all -n $NAMESPACE
+echo "Checking HPA in namespace [$NAMESPACE]"
 $KUBECTL describe hpa -n $NAMESPACE
-POD_NAME_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
+POD_NAME_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP_1")
 echo "Waiting for pod/$POD_NAME_TEST_APP to be ready"
 $KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_TEST_APP" -n $NAMESPACE
-echo "SUCCESS: pod/$POD_NAME_TEST_APP is ready"
-echo "SUCCESS: Zero-to-one scaling [0-to-1] completed"
+echo "SUCCESS: Test (zero-to-one scaling) completed successfully!"
 
-# Test
+# Test # 2
 echo
-echo "TEST # 2: Multiple pods scaling [1-to-4]"
-echo "Setting $METRIC_KEY in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY" "50"
-echo "Setting $LAST_ACTION_KEY in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY" "$(date +"$FMT_DATETIME")"
-sleep 1m
-echo "Listing all in all namespaces"
-$KUBECTL get all --all-namespaces
-echo "Checking HPA in namespace $NAMESPACE"
+echo "TEST # 2: Redeploy ScaledObject with scaleMetricName [$METRIC_NAME_1 => $METRIC_NAME_1_NEW]"
+echo "Redeploying test deployment [$TEST_DEPLOYMENT] with scaleMetricName [$METRIC_NAME_1_NEW]"
+sed -i "s#scaleMetricName: \"$METRIC_NAME_1\"#scaleMetricName: \"$METRIC_NAME_1_NEW\"#" $TEST_DEPLOYMENT
+$KUBECTL apply -f $TEST_DEPLOYMENT
+sleep 30s
+$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY_1_NEW" "10"
+echo "Setting $LAST_ACTION_KEY_1 in Redis server"
+$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
+sleep 30s
+echo "Listing all in namespace [$NAMESPACE]"
+$KUBECTL get all -n $NAMESPACE
+echo "Checking HPA in namespace [$NAMESPACE]"
 $KUBECTL describe hpa -n $NAMESPACE
-POD_NAMES_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP")
+POD_NAME_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP_1")
+echo "Waiting for pod/$POD_NAME_TEST_APP to be ready"
+$KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_TEST_APP" -n $NAMESPACE
+echo
+echo "Redeploying test deployment [$TEST_DEPLOYMENT] with scaleMetricName [$METRIC_NAME_1]"
+sed -i "s#scaleMetricName: \"$METRIC_NAME_1_NEW\"#scaleMetricName: \"$METRIC_NAME_1\"#" $TEST_DEPLOYMENT
+$KUBECTL apply -f $TEST_DEPLOYMENT
+sleep 30s
+echo "Listing all in namespace [$NAMESPACE]"
+$KUBECTL get all -n $NAMESPACE
+echo "Checking HPA in namespace [$NAMESPACE]"
+$KUBECTL describe hpa -n $NAMESPACE
+POD_NAME_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP_1")
+echo "Waiting for pod/$POD_NAME_TEST_APP to be ready"
+$KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_TEST_APP" -n $NAMESPACE
+echo "SUCCESS: Test (reploy with different scaleMetricName) completed successfully!"
+
+# Test # 3
+echo
+echo "TEST # 3: Multiple pods scaling [1-to-4]"
+echo "Setting $METRIC_KEY_1 in Redis server"
+$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY_1" "50"
+echo "Setting $LAST_ACTION_KEY_1 in Redis server"
+$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
+sleep 1m
+echo "Listing all in namespace [$NAMESPACE]"
+$KUBECTL get all -n $NAMESPACE
+echo "Checking HPA in namespace [$NAMESPACE]"
+$KUBECTL describe hpa -n $NAMESPACE
+POD_NAMES_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP_1")
 POD_NAMES_ARRAY=($POD_NAMES_TEST_APP)
+POD_NAMES_ARRAY_LENGTH="${#POD_NAMES_ARRAY[@]}"
+EXPECTED_POD_COUNT=4
+if (( POD_NAMES_ARRAY_LENGTH != EXPECTED_POD_COUNT )); then
+    echo
+    echo "ERROR: Pod count mismatch! got: $POD_NAMES_ARRAY_LENGTH, expected: $EXPECTED_POD_COUNT"
+    echo "       Maybe, the deplay after deployment needs to be increased. Adjust accordingly."
+    echo
+    $KUBECTL cluster-info dump
+    exit 1
+fi
+
+POD_COUNT=0
 for pod in "${POD_NAMES_ARRAY[@]}"; do
-    echo "Waiting for pod/$pod to be ready"
+    POD_COUNT=$(( POD_COUNT + 1 ))
+    echo "Waiting for pod/$pod to be ready [$POD_COUNT]"
     $KUBECTL wait --for=condition=ready --timeout=600s "pod/$pod" -n $NAMESPACE
 done
-echo "SUCCESS: Multiple pods scaling [1-to-4] completed"
+
+if (( POD_COUNT != EXPECTED_POD_COUNT )); then
+    echo
+    echo "ERROR: 1-to-4 scaling failed! got: $POD_COUNT, expected: $EXPECTED_POD_COUNT"
+    echo
+    $KUBECTL cluster-info dump
+    exit 1
+fi
+
+echo "SUCCESS: Test (1-to-4 scaling) completed successfully!"
+
+# --- TESTS - END ---
 
 # Teardown
 echo
-echo "Deleting namespace [$NAMESPACE]"
-$KUBECTL delete ns $NAMESPACE
+echo "Deleting test deployment [$TEST_DEPLOYMENT]"
+$KUBECTL delete -f $TEST_DEPLOYMENT
 
 echo "Deleting keda deployment"
 $KUBECTL delete -f $KEDA_DEPLOYMENT
 
+echo
 echo "SUCCESS: Scaling tests completed successfully!"
+echo "--- [DONE] ---"
