@@ -58,13 +58,13 @@ The external scaler listens on port `50051`.
 
 ### Global Configuration: Environment Variables
 
-| Environment Variable            | Description                           |
-|:--------------------------------|:--------------------------------------|
-| `CWM_REDIS_HOST`                | ip/host of the Redis metrics server   |
-| `CWM_REDIS_PORT`                | port of the Redis metrics server      |
-| `CWM_REDIS_DB`                  | database to use                       |
-| `LAST_UPDATE_PREFIX_TEMPLATE`   | timestamp of last update              |
-| `METRICS_PREFIX_TEMPLATE`       | prefix to get the metrics from        |
+| Environment Variable            | Default Value                 | Description                           |
+|:-------------------------------:|:-----------------------------:|:--------------------------------------|
+| `CWM_REDIS_HOST`                | `localhost`                   | ip/host of the Redis metrics server   |
+| `CWM_REDIS_PORT`                | `6379`                        | port of the Redis metrics server      |
+| `CWM_REDIS_DB`                  | `0`                           | database to use                       |
+| `LAST_UPDATE_PREFIX_TEMPLATE`   | `deploymentid:last_action`    | timestamp of last update              |
+| `METRICS_PREFIX_TEMPLATE`       | `deploymentid:minio-metrics`  | prefix to get the metrics from        |
 
 ### Local Configuration: Metadata in ScaledObject
 
@@ -101,13 +101,13 @@ spec:
 
 The following table lists the supported local configuration:
 
-| Configuration (Key)           | Description                           |
-|:------------------------------|:--------------------------------------|
-| `deploymentid`                | value to replace in the prefix templates |
-| `isActiveTtlSeconds`          | seconds since last update to consider the workload as active |
-| `scaleMetricName`             | metric for scaling (listed below)     |
-| `scalePeriodSeconds`          | retention time for the metric value   |
-| `targetValue`                 | target value reported by the autoscaler |
+| Configuration (Key)           | Default Value   | Description                                           |
+|:-----------------------------:|:---------------:|:------------------------------------------------------|
+| `deploymentid`                | `deploymentid`  | value to replace in the prefix templates              |
+| `isActiveTtlSeconds`          | `600`           | seconds since last update for workload to be active   |
+| `scaleMetricName`             | `bytes_out`     | metric for scaling (listed below)                     |
+| `scalePeriodSeconds`          | `600`           | retention time for the metric value                   |
+| `targetValue`                 | `10`            | target value reported by the autoscaler               |
 
 Here are the supported options for `scaleMetricName`:
 
@@ -240,7 +240,21 @@ kubectl logs -f -n cwm-keda-external-scaler-ns pod/cwm-keda-external-scaler-* cw
 **NOTE**: The trailing `*` in above `pod/<pod-name>-*` format denotes the actual
 complete name of the pod.
 
-For more details, please navigate to [test](./test) subdirectory.
+### Run Tests
+
+Start `minikube`:
+
+```shell
+minikube start --driver=docker --kubernetes-version=v1.16.14
+```
+
+Run:
+
+```shell
+./test/run_scaling_tests.sh
+```
+
+For details, please navigate to [test](./test) subdirectory.
 
 ## Contribute
 
