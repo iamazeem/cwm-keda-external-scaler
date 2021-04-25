@@ -39,17 +39,14 @@ func (c *metricCache) isEmpty(deploymentid string) bool {
 func (c *metricCache) append(deploymentid string, metric metric, scalePeriodSeconds int64) {
 	c.initializeIfNil()
 
-	// append value if cache is empty or the metric value is greater than the last one for a non-empty cache
-	if c.isEmpty(deploymentid) || metric.value > c.cache[deploymentid][c.getSize(deploymentid)-1].metric.value {
-		log.Printf("[deploymentid: %v] appending metric {name: %v, value: %v}", deploymentid, metric.name, metric.value)
+	log.Printf("[deploymentid: %v] appending metric {name: %v, value: %v}", deploymentid, metric.name, metric.value)
 
-		c.cache[deploymentid] = append(c.cache[deploymentid], metricData{
-			timestamp: time.Now().UTC(),
-			metric:    metric,
-		})
+	c.cache[deploymentid] = append(c.cache[deploymentid], metricData{
+		timestamp: time.Now().UTC(),
+		metric:    metric,
+	})
 
-		log.Printf("[deploymentid: %v] appended metric {name: %v, value: %v}", deploymentid, metric.name, metric.value)
-	}
+	log.Printf("[deploymentid: %v] appended metric {name: %v, value: %v}", deploymentid, metric.name, metric.value)
 
 	c.purge(deploymentid, scalePeriodSeconds)
 }
