@@ -138,6 +138,7 @@ echo "Redeploying test deployment [$TEST_DEPLOYMENT] with scaleMetricName [$METR
 sed -i "s#scaleMetricName: \"$METRIC_NAME_1\"#scaleMetricName: \"$METRIC_NAME_1_NEW\"#" $TEST_DEPLOYMENT
 $KUBECTL apply -f $TEST_DEPLOYMENT
 sleep 30s
+echo "Setting $METRIC_KEY_1_NEW in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY_1_NEW" "10"
 echo "Setting $LAST_ACTION_KEY_1 in Redis server"
 $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
