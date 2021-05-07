@@ -41,26 +41,11 @@ func getValueFromScalerMetadata(metadata map[string]string, key, defaultValue st
 	}
 }
 
-func getLastUpdatPrefix(metadata map[string]string) string {
-	lastUpdatePrefixTemplate := getEnv(keyLastUpdatePrefixTemplate, defaultLastUpdatePrefixTemplate)
+func getLastUpdateKey(metadata map[string]string) string {
+	lastUpdatePrefix := getEnv(keyLastUpdatePrefix, defaultLastUpdatePrefix)
 	deploymentid := getValueFromScalerMetadata(metadata, keyDeploymentId, defaultDeploymentId)
-	lastUpdatePrefix := strings.Replace(lastUpdatePrefixTemplate, keyDeploymentId, deploymentid, 1)
-	if lastUpdatePrefix == "" {
-		log.Printf("last update prefix is empty")
-	}
-
-	return lastUpdatePrefix
-}
-
-func getMetricsPrefix(metadata map[string]string) string {
-	metricsPrefixTemplate := getEnv(keyMetricsPrefixTemplate, defaultMetricsPrefixTemplate)
-	deploymentid := getValueFromScalerMetadata(metadata, keyDeploymentId, defaultDeploymentId)
-	metricsPrefix := strings.Replace(metricsPrefixTemplate, keyDeploymentId, deploymentid, 1)
-	if metricsPrefix == "" {
-		log.Println("metrics prefix is empty")
-	}
-
-	return metricsPrefix
+	lastUpdateKey := lastUpdatePrefix + ":" + deploymentid
+	return lastUpdateKey
 }
 
 // IsActive utility functions
@@ -77,15 +62,15 @@ func getIsActiveTtlSeconds(metadata map[string]string) (int64, error) {
 }
 
 func getLastUpdateTime(metadata map[string]string) (time.Time, error) {
-	keyLastUpdate := getLastUpdatPrefix(metadata)
-	lastUpdateValue, isValidLastUpdateValue := getValueFromRedisServer(keyLastUpdate)
+	lastUpdateKey := getLastUpdateKey(metadata)
+	lastUpdateValue, isValidLastUpdateValue := getValueFromRedisServer(lastUpdateKey)
 	if !isValidLastUpdateValue {
-		return time.Time{}, status.Errorf(codes.Internal, "invalid value: %v => %v", keyLastUpdate, lastUpdateValue)
+		return time.Time{}, status.Errorf(codes.Internal, "invalid value: %v => %v", lastUpdateKey, lastUpdateValue)
 	}
 
 	lastUpdateTime, err := time.Parse(time.RFC3339Nano, lastUpdateValue)
 	if err != nil {
-		return time.Time{}, status.Errorf(codes.Internal, "invalid value: %v => %v", keyLastUpdate, lastUpdateTime)
+		return time.Time{}, status.Errorf(codes.Internal, "invalid value: %v => %v", lastUpdateKey, lastUpdateTime)
 	}
 
 	return lastUpdateTime, nil
@@ -172,7 +157,7 @@ func getMetric(metadata map[string]string) (metric, error) {
 	var scaleMetricValue int64 = 0
 	var err error = nil
 
-	metricsPrefix := getMetricsPrefix(metadata)
+	metricsPrefix := getEnv(keyMetricsPrefix, defaultMetricsPrefix)
 	scaleMetricName := getValueFromScalerMetadata(metadata, keyScaleMetricName, defualtScaleMetricName)
 
 	switch strings.ToLower(scaleMetricName) {

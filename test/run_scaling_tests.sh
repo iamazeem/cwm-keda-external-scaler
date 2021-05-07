@@ -17,12 +17,12 @@ FMT_DATETIME="%Y-%m-%dT%H:%M:%S.%8NZ"
 
 # Test constants
 
-DEPLOYMENT_ID_1="deploymentid1"
-LAST_ACTION_KEY_1="$DEPLOYMENT_ID_1:last_action"
+DEPLOYMENT_ID_1="minio1"
+LAST_ACTION_KEY_1="deploymentid:last_action:$DEPLOYMENT_ID_1"
 METRIC_NAME_1="bytes_out"
-METRIC_KEY_1="$DEPLOYMENT_ID_1:minio-metrics:$METRIC_NAME_1"
+METRIC_KEY_1="deploymentid:minio-metrics:$METRIC_NAME_1"
 METRIC_NAME_1_NEW="bytes_in"
-METRIC_KEY_1_NEW="$DEPLOYMENT_ID_1:minio-metrics:$METRIC_NAME_1_NEW"
+METRIC_KEY_1_NEW="deploymentid:minio-metrics:$METRIC_NAME_1_NEW"
 PREFIX_TEST_APP_1="test-app1"
 
 # Setup

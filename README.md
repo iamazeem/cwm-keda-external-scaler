@@ -62,13 +62,13 @@ The external scaler listens on port `50051`.
 
 ### Global Configuration: Environment Variables
 
-| Environment Variable            | Default Value                 | Description                           |
-|:-------------------------------:|:-----------------------------:|:--------------------------------------|
-| `CWM_REDIS_HOST`                | `localhost`                   | ip/host of the Redis metrics server   |
-| `CWM_REDIS_PORT`                | `6379`                        | port of the Redis metrics server      |
-| `CWM_REDIS_DB`                  | `0`                           | Redis database to use                 |
-| `LAST_UPDATE_PREFIX_TEMPLATE`   | `deploymentid:last_action`    | prefix template for last update key   |
-| `METRICS_PREFIX_TEMPLATE`       | `deploymentid:minio-metrics`  | prefix template for metrics key       |
+| Environment Variable          | Default Value                 | Description                           |
+|:-----------------------------:|:-----------------------------:|:--------------------------------------|
+| `CWM_REDIS_HOST`              | `localhost`                   | ip/host of the Redis metrics server   |
+| `CWM_REDIS_PORT`              | `6379`                        | port of the Redis metrics server      |
+| `CWM_REDIS_DB`                | `0`                           | Redis database to use                 |
+| `LAST_UPDATE_PREFIX`          | `deploymentid:last_action`    | prefix for last update key            |
+| `METRICS_PREFIX`              | `deploymentid:minio-metrics`  | prefix for metrics key                |
 
 ### Local Configuration: Metadata in ScaledObject
 
@@ -107,7 +107,7 @@ The following table lists the supported local configuration:
 
 | Configuration (Key)           | Default Value   | Description                                           |
 |:-----------------------------:|:---------------:|:------------------------------------------------------|
-| `deploymentid`                | `deploymentid`  | value to replace in the prefix templates              |
+| `deploymentid`                | `minio`         | value to append to the prefix                         |
 | `isActiveTtlSeconds`          | `600`           | seconds since last update for workload to be active   |
 | `scaleMetricName`             | `bytes_out`     | metric for scaling (listed below)                     |
 | `scalePeriodSeconds`          | `600`           | retention time for the metric value                   |

@@ -4,18 +4,18 @@ package main
 
 const (
 	// keys
-	keyRedisHost                = "CWM_REDIS_HOST" // Added CWM_ prefix for REDIS_HOST and REDIS_PORT
-	keyRedisPort                = "CWM_REDIS_PORT" // See: https://github.com/docker-library/redis/issues/53
-	keyRedisDb                  = "CWM_REDIS_DB"
-	keyLastUpdatePrefixTemplate = "LAST_UPDATE_PREFIX_TEMPLATE"
-	keyMetricsPrefixTemplate    = "METRICS_PREFIX_TEMPLATE"
+	keyRedisHost        = "CWM_REDIS_HOST" // Added CWM_ prefix for REDIS_HOST and REDIS_PORT
+	keyRedisPort        = "CWM_REDIS_PORT" // See: https://github.com/docker-library/redis/issues/53
+	keyRedisDb          = "CWM_REDIS_DB"
+	keyLastUpdatePrefix = "LAST_UPDATE_PREFIX"
+	keyMetricsPrefix    = "METRICS_PREFIX"
 
 	// default values
-	defaultRedisHost                = "localhost"
-	defaultRedisPort                = "6379"
-	defaultRedisDb                  = "0"
-	defaultLastUpdatePrefixTemplate = "deploymentid:last_action"
-	defaultMetricsPrefixTemplate    = "deploymentid:minio-metrics"
+	defaultRedisHost        = "localhost"
+	defaultRedisPort        = "6379"
+	defaultRedisDb          = "0"
+	defaultLastUpdatePrefix = "deploymentid:last_action"
+	defaultMetricsPrefix    = "deploymentid:minio-metrics"
 )
 
 // Local configuration (ScaledObject metadata)
@@ -29,7 +29,7 @@ const (
 	keyTargetValue        = "targetValue"
 
 	// default values
-	defaultDeploymentId       = "deploymentid"
+	defaultDeploymentId       = "minio"
 	defaultIsActiveTtlSeconds = "600"
 	defualtScaleMetricName    = "bytes_out"
 	defaultScalePeriodSeconds = "600"
