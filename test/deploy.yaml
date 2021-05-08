@@ -82,7 +82,7 @@ spec:
     spec:
       containers:
       - name: http
-        image: nginx:latest
+        image: nginxdemos/hello:latest
         imagePullPolicy: IfNotPresent
 ---
 apiVersion: keda.sh/v1alpha1
