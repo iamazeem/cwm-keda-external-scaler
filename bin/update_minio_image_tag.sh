@@ -22,7 +22,7 @@ git clone git@github.com:CloudWebManage/cwm-worker-deployment-minio.git
 cd $TARGET_REPO/helm
 IMAGE="docker.pkg.github.com/cwm-keda-external-scaler/iamazeem/cwm-keda-external-scaler"
 IMAGE_WITH_SHA=$IMAGE:$GITHUB_SHA
-sed -i "s#$IMAGE#$IMAGE_WITH_SHA#" ./$TARGET_FILE
+sed -i "s#$IMAGE.*#$IMAGE_WITH_SHA#" ./$TARGET_FILE
 
 echo "Pushing updated image tag [$IMAGE_WITH_SHA] to $TARGET_REPO"
 git diff
