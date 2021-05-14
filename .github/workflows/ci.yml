@@ -36,3 +36,10 @@ jobs:
         REPO: ${{ github.repository }}
       run: |
         ./bin/push_docker_image.sh
+
+    - name: Update image tag in cwm-worker-deployment-minio/helm/values.yaml
+      if: github.ref == 'refs/heads/main'
+      env:
+        DEPLOY_KEY: ${{ secrets.CWM_WORKER_MINIO_DEPLOY_KEY }}
+      run: |
+        ./bin/update_minio_image_tag.sh
