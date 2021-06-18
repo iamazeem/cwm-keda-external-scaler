@@ -8,6 +8,21 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/iamAzeem/cwm-keda-external-scaler)
 ![GitHub repo size](https://img.shields.io/github/repo-size/iamAzeem/cwm-keda-external-scaler)
 
+- [cwm-keda-external-scaler](#cwm-keda-external-scaler)
+  - [Overview](#overview)
+    - [Diagram](#diagram)
+  - [Configuration](#configuration)
+    - [Global Configuration: Environment Variables](#global-configuration-environment-variables)
+    - [Local Configuration: Metadata in ScaledObject](#local-configuration-metadata-in-scaledobject)
+    - [Sample Configuration](#sample-configuration)
+  - [Build Docker Image](#build-docker-image)
+  - [Testing](#testing)
+    - [Prerequisite](#prerequisite)
+    - [Deploy](#deploy)
+    - [Run Tests](#run-tests)
+  - [Contribute](#contribute)
+  - [License](#license)
+
 ## Overview
 
 [CWM](https://github.com/CloudWebManage) [KEDA](https://keda.sh/)
