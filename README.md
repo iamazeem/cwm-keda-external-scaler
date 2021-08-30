@@ -1,12 +1,12 @@
 # cwm-keda-external-scaler
 
-[![ci](https://github.com/iamAzeem/cwm-keda-external-scaler/actions/workflows/ci.yml/badge.svg)](https://github.com/iamAzeem/cwm-keda-external-scaler/actions/workflows/ci.yml)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/iamAzeem/cwm-keda-external-scaler)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/iamAzeem/cwm-keda-external-scaler/blob/main/LICENSE)
+[![ci](https://github.com/CloudWebManage/cwm-keda-external-scaler/actions/workflows/ci.yml/badge.svg)](https://github.com/CloudWebManage/cwm-keda-external-scaler/actions/workflows/ci.yml)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/CloudWebManage/cwm-keda-external-scaler)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/CloudWebManage/cwm-keda-external-scaler/blob/main/LICENSE)
 
-![Lines of code](https://img.shields.io/tokei/lines/github/iamAzeem/cwm-keda-external-scaler?label=LOC)
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/iamAzeem/cwm-keda-external-scaler)
-![GitHub repo size](https://img.shields.io/github/repo-size/iamAzeem/cwm-keda-external-scaler)
+![Lines of code](https://img.shields.io/tokei/lines/github/CloudWebManage/cwm-keda-external-scaler?label=LOC)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/CloudWebManage/cwm-keda-external-scaler)
+![GitHub repo size](https://img.shields.io/github/repo-size/CloudWebManage/cwm-keda-external-scaler)
 
 - [cwm-keda-external-scaler](#cwm-keda-external-scaler)
   - [Overview](#overview)

@@ -1,4 +1,4 @@
-module github.com/iamAzeem/cwm-keda-external-scaler
+module github.com/CloudWebManage/cwm-keda-external-scaler
 
 go 1.16
 

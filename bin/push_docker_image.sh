@@ -9,12 +9,12 @@ eval "$(minikube -p minikube docker-env)"
 #  PASSWORD: ${{ github.token }}
 #  REPO: ${{ github.repository }}
 
-PKGS_URL="docker.pkg.github.com"
+PKGS_URL="ghcr.io"
 SOURCE_IMAGE="cwm-keda-external-scaler"
 
 log_in () {
     echo "Logging in to docker registry"
-    echo "$PASSWORD" | docker login https://docker.pkg.github.com -u "$USERNAME" --password-stdin
+    echo "$PASSWORD" | docker login https://ghcr.io -u "$USERNAME" --password-stdin
 }
 
 push_image () {

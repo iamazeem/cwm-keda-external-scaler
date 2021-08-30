@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	pb "github.com/iamAzeem/cwm-keda-external-scaler/externalscaler"
+	pb "github.com/CloudWebManage/cwm-keda-external-scaler/externalscaler"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

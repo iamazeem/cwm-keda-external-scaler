@@ -19,7 +19,7 @@ echo "Cloning $TARGET_REPO to update image tag"
 git clone git@github.com:CloudWebManage/cwm-worker-deployment-minio.git
 
 cd $TARGET_REPO/helm
-IMAGE="docker.pkg.github.com/iamazeem/cwm-keda-external-scaler"
+IMAGE="ghcr.io/cloudwebmanage/cwm-keda-external-scaler"
 IMAGE_WITH_SHA="$IMAGE:$GITHUB_SHA"
 IMAGE_FILE_NAME="$SOURCE_REPO.image"
 echo "$IMAGE_WITH_SHA" > ./$IMAGE_FILE_NAME
