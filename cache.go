@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,7 +25,7 @@ type metricCache struct {
 func (c *metricCache) initializeIfNil() {
 	if c.cache == nil {
 		c.cache = make(map[string][]metricData)
-		log.Println("cache initialized")
+		log.Debug("cache initialized")
 	}
 }
 
@@ -39,14 +40,14 @@ func (c *metricCache) isEmpty(deploymentid string) bool {
 func (c *metricCache) append(deploymentid string, metric metric, scalePeriodSeconds int64) {
 	c.initializeIfNil()
 
-	log.Printf("[deploymentid: %v] appending metric {name: %v, value: %v}", deploymentid, metric.name, metric.value)
+	log.Debugf("[deploymentid: %v] appending metric {name: %v, value: %v}", deploymentid, metric.name, metric.value)
 
 	c.cache[deploymentid] = append(c.cache[deploymentid], metricData{
 		timestamp: time.Now().UTC(),
 		metric:    metric,
 	})
 
-	log.Printf("[deploymentid: %v] appended metric {name: %v, value: %v}", deploymentid, metric.name, metric.value)
+	log.Debugf("[deploymentid: %v] appended metric {name: %v, value: %v}", deploymentid, metric.name, metric.value)
 
 	c.purge(deploymentid, scalePeriodSeconds)
 }
@@ -62,16 +63,16 @@ func (c *metricCache) getPurgeIndex(deploymentid string, scalePeriodSeconds int6
 		}
 	}
 
-	log.Printf("[deploymentid: %v] number of values to purge: %v", deploymentid, index)
+	log.Debugf("[deploymentid: %v] number of values to purge: %v", deploymentid, index)
 
 	return index
 }
 
 func (c *metricCache) purge(deploymentid string, scalePeriodSeconds int64) {
-	log.Printf("[deploymentid: %v] purging metric values [%v = %v]", deploymentid, keyScalePeriodSeconds, scalePeriodSeconds)
+	log.Debugf("[deploymentid: %v] purging metric values [%v = %v]", deploymentid, keyScalePeriodSeconds, scalePeriodSeconds)
 
 	if c.isEmpty(deploymentid) {
-		log.Printf("[deploymentid: %v] cache is already empty, purge not needed", deploymentid)
+		log.Debugf("[deploymentid: %v] cache is already empty, purge not needed", deploymentid)
 		return
 	}
 
@@ -83,7 +84,7 @@ func (c *metricCache) purge(deploymentid string, scalePeriodSeconds int64) {
 		c.cache[deploymentid] = c.cache[deploymentid][purgeIndex:]
 		newCacheSize := c.getSize(deploymentid)
 		noOfValuesPurged := oldCacheSize - newCacheSize
-		log.Printf("[deploymentid: %v] purged %v value(s). cache size: {old: %v, new: %v}", deploymentid, noOfValuesPurged, oldCacheSize, newCacheSize)
+		log.Infof("[deploymentid: %v] purged %v value(s). cache size: {old: %v, new: %v}", deploymentid, noOfValuesPurged, oldCacheSize, newCacheSize)
 	}
 
 	// after purging values, if a cache's list for a certain deploymentid is empty,
@@ -91,7 +92,7 @@ func (c *metricCache) purge(deploymentid string, scalePeriodSeconds int64) {
 	// for the same deploymentid, the slot will be added again if it reappears later
 	if c.isEmpty(deploymentid) {
 		delete(c.cache, deploymentid)
-		log.Printf("[deploymentid: %v] empty cache slot purged completely", deploymentid)
+		log.Infof("[deploymentid: %v] empty cache slot purged completely", deploymentid)
 	}
 }
 
