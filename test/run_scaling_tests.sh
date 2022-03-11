@@ -68,8 +68,8 @@ sleep 1m
 echo "Listing all in namespace [$NAMESPACE]"
 $KUBECTL get all -n $NAMESPACE
 echo "Waiting for test deployments to be ready"
-$KUBECTL -n $NAMESPACE rollout status --timeout=5m deployment/cwm-keda-external-scaler &&\
-$KUBECTL -n $NAMESPACE rollout status --timeout=5m deployment/test-app1 &&\
+$KUBECTL -n $NAMESPACE rollout status --timeout=5m deployment/cwm-keda-external-scaler
+$KUBECTL -n $NAMESPACE rollout status --timeout=5m deployment/test-app1
 echo
 echo "Waiting for HPA to be ready [No. of tries: 5]"
 HPA_STATUS="down"
@@ -84,7 +84,7 @@ for i in {1..5}; do
     sleep 1m
 done
 
-if [[ "${HPA_STATUS}" == "down" ]]; then
+if [[ $HPA_STATUS == "down" ]]; then
     echo
     echo -e "ERROR: HPA is down!"
     echo
@@ -106,7 +106,7 @@ for i in {1..5}; do
     sleep 10s
 done
 
-if [[ "${REDIS_STATUS}" == "down" ]]; then
+if [[ $REDIS_STATUS == "down" ]]; then
     echo
     echo "ERROR: Redis server is down!"
     echo
@@ -207,6 +207,10 @@ if (( POD_COUNT != EXPECTED_POD_COUNT )); then
 fi
 
 echo "SUCCESS: Test (1-to-4 scaling) completed successfully!"
+
+echo "--- [LOGS] ---"
+$KUBECTL logs -n $NAMESPACE pod/cwm-keda-external-scaler
+echo "--------------"
 
 # --- TESTS - END ---
 
