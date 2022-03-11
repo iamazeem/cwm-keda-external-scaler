@@ -84,7 +84,7 @@ func getValueFromRedisServer(key string) (string, bool) {
 	val, err := rdb.Get(rdb.Context(), key).Result()
 	switch {
 	case err == redis.Nil:
-		log.Errorf("'%v' key does not exist", key)
+		log.Errorf("key does not exist [%v]", key)
 		return val, false
 	case err != nil:
 		log.Errorf("get call failed for '%v'! %v", key, err.Error())

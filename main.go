@@ -162,7 +162,7 @@ func (f *logFormatter) Format(entry *log.Entry) ([]byte, error) {
 	file := filepath[strings.LastIndex(filepath, "/")+1:]
 	line := entry.Caller.Line
 	msg := entry.Message
-	log := fmt.Sprintf("%v [%8v] %12v:%3v: %v\n", timestamp, level, file, line, msg)
+	log := fmt.Sprintf("%v [%8v] %8v:%3v | %v\n", timestamp, level, file, line, msg)
 	return []byte(log), nil
 }
 
@@ -182,7 +182,7 @@ func init() {
 // main function
 
 func main() {
-	log.Info("starting external scaler")
+	log.Infof("starting external scaler [%v = %v]", keyLogLevel, log.GetLevel().String())
 
 	grpcAddress := "0.0.0.0:50051"
 	listener, err := net.Listen("tcp", grpcAddress)
