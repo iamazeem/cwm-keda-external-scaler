@@ -209,7 +209,7 @@ fi
 echo "SUCCESS: Test (1-to-4 scaling) completed successfully!"
 
 echo "--- [LOGS] ---"
-$KUBECTL logs -n $NAMESPACE pod/cwm-keda-external-scaler
+$KUBECTL logs -n $NAMESPACE -l app=cwm-keda-external-scaler
 echo "--------------"
 
 # --- TESTS - END ---
