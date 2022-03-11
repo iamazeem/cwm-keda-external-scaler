@@ -209,7 +209,7 @@ fi
 echo "SUCCESS: Test (1-to-4 scaling) completed successfully!"
 
 echo "--- [LOGS] ---"
-$KUBECTL logs -n $NAMESPACE deployment/cwm-keda-external-scaler
+$KUBECTL logs -n $NAMESPACE deployment/cwm-keda-external-scaler cwm-keda-external-scaler
 echo "--------------"
 
 # --- TESTS - END ---
