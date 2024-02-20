@@ -47,7 +47,7 @@ KEDA_NAMESPACE="keda"
 KEDA_PODS=("keda-operator" "keda-metrics-apiserver")
 for pod in "${KEDA_PODS[@]}"; do
     echo "Waiting for pod/$pod to be ready"
-    $KUBECTL wait --for=condition=ready pod -l app="$pod" -n $KEDA_NAMESPACE
+    $KUBECTL wait --for=condition=ready --timeout=-1 pod -l app="$pod" -n $KEDA_NAMESPACE
 done
 
 echo "SUCCESS: keda is ready!"
