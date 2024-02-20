@@ -11,18 +11,22 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-20.04
-    container: ubuntu-18.04
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Minikube
-      uses: manusa/actions-setup-minikube@v2.10.0
-      with:
-        minikube version: 'v1.32.0'
-        kubernetes version: 'v1.29.0'
-        driver: 'docker'
-        github token: ${{ secrets.GITHUB_TOKEN }}
+    # - name: Setup Minikube
+    #   uses: manusa/actions-setup-minikube@v2.10.0
+    #   with:
+    #     minikube version: 'v1.32.0'
+    #     kubernetes version: 'v1.29.0'
+    #     driver: 'docker'
+    #     github token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Start minikube
+      run: |
+        minikube version
+        minikube start
 
     - name: Test
       run: |
