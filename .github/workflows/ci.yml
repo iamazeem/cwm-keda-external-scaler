@@ -9,9 +9,8 @@ on:
     - '**.md'
 
 jobs:
-  test-and-publish:
-    name: Build, test and publish
-    runs-on: ubuntu-latest
+  ci:
+    runs-on: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v4
@@ -20,9 +19,9 @@ jobs:
       uses: manusa/actions-setup-minikube@v2.10.0
       with:
         minikube version: 'v1.32.0'
-        kubernetes version: 'v1.16.4'
+        kubernetes version: 'v1.29.0'
         driver: 'docker'
-        github token: ${{ github.token }}
+        github token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test
       run: |
@@ -32,7 +31,7 @@ jobs:
       if: github.ref == 'refs/heads/main'
       env:
         USERNAME: ${{ github.actor }}
-        PASSWORD: ${{ github.token }}
+        PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         REPO: ${{ github.repository }}
       run: |
         ./bin/push_docker_image.sh
