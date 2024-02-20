@@ -4,8 +4,6 @@
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/iamAzeem/cwm-keda-external-scaler)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/iamAzeem/cwm-keda-external-scaler/blob/main/LICENSE)
 
-## Overview
-
 [CWM](https://github.com/CloudWebManage) [KEDA](https://keda.sh/)
 [external scaler](https://keda.sh/docs/2.2/concepts/external-scalers/) scales
 the target resrouce based on the metrics fetched from the Redis server. The
@@ -18,7 +16,7 @@ its underlying logging engine. The Redis server stores a number of
 Based on its local configuration, the external scaler fetches only the required
 one(s) to make its scaling decisions.
 
-### Diagram
+## Flow Diagram
 
 ```text
                                   CONFIGURATION (global and local)
