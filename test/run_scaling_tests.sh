@@ -46,7 +46,7 @@ KEDA_NAMESPACE="keda"
 KEDA_DEPLOYMENTS=("keda-operator" "keda-metrics-apiserver")
 for deployment in "${KEDA_DEPLOYMENTS[@]}"; do
     echo "Waiting for deployment/$deployment to be ready"
-    if ! $KUBECTL -n $KEDA_NAMESPACE rollout status --timeout=5m "deployment/$deployment"; then
+    if ! $KUBECTL -n $KEDA_NAMESPACE rollout status --timeout=10m "deployment/$deployment"; then
       $KUBECTL -n $KEDA_NAMESPACE get pods
       exit 1
     fi
