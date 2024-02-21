@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -18,7 +19,7 @@ func connectToRedisServer() bool {
 		return true
 	}
 
-	log.Printf("connecting with Redis server")
+	log.Debug("connecting with Redis server")
 
 	redisHost := getEnv(keyRedisHost, defaultRedisHost)
 	redisPort := getEnv(keyRedisPort, defaultRedisPort)
@@ -29,7 +30,7 @@ func connectToRedisServer() bool {
 	redisDb, err := strconv.Atoi(redisDbStr)
 	if err != nil {
 		redisDb = 0
-		log.Printf("invalid redis db %v. err: %v. using default db: %v", redisDbStr, err.Error(), redisDb)
+		log.Warnf("invalid redis db %v. err: %v. using default db: %v", redisDbStr, err.Error(), redisDb)
 	}
 
 	rdb = redis.NewClient(&redis.Options{
@@ -44,56 +45,56 @@ func connectToRedisServer() bool {
 		return false
 	}
 
-	log.Printf("connected with Redis server [%v]", address)
+	log.Debugf("connected with Redis server [%v]", address)
 
 	return true
 }
 
 func pingRedisServer() bool {
-	log.Println("pinging Redis server")
+	log.Debug("pinging Redis server")
 
 	val, err := rdb.Ping(rdb.Context()).Result()
 	switch {
 	case err == redis.Nil:
 		return false
 	case err != nil:
-		log.Printf("PING call failed! %v", err.Error())
+		log.Warnf("PING call failed! %v", err.Error())
 		return false
 	case val == "":
-		log.Println("empty value for 'PING'")
+		log.Warn("empty value for 'PING'")
 		return false
 	case strings.ToUpper(val) != "PONG":
-		log.Println("PING != PONG")
+		log.Warn("PING != PONG")
 		return false
 	}
 
-	log.Printf("got: 'PING' = '%v'", val)
+	log.Debugf("got: 'PING' = '%v'", val)
 
 	return true
 }
 
 func getValueFromRedisServer(key string) (string, bool) {
-	log.Printf("getting '%v' from Redis server", key)
+	log.Debugf("getting '%v' from Redis server", key)
 
 	if !connectToRedisServer() {
-		log.Println("could not connect with Redis server")
+		log.Error("could not connect with Redis server")
 		return "", false
 	}
 
 	val, err := rdb.Get(rdb.Context(), key).Result()
 	switch {
 	case err == redis.Nil:
-		log.Printf("'%v' key does not exist", key)
+		log.Errorf("key does not exist [%v]", key)
 		return val, false
 	case err != nil:
-		log.Printf("get call failed for '%v'! %v", key, err.Error())
+		log.Errorf("get call failed for '%v'! %v", key, err.Error())
 		return val, false
 	case val == "":
-		log.Printf("empty value for '%v'", key)
+		log.Errorf("empty value for '%v'", key)
 		return val, false
 	}
 
-	log.Printf("got: [%v = %v]", key, val)
+	log.Debugf("got: [%v = %v]", key, val)
 
 	return val, true
 }

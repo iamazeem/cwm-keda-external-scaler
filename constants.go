@@ -4,6 +4,7 @@ package main
 
 const (
 	// keys
+	keyLogLevel         = "LOG_LEVEL"
 	keyRedisHost        = "CWM_REDIS_HOST" // Added CWM_ prefix for REDIS_HOST and REDIS_PORT
 	keyRedisPort        = "CWM_REDIS_PORT" // See: https://github.com/docker-library/redis/issues/53
 	keyRedisDb          = "CWM_REDIS_DB"
@@ -11,6 +12,7 @@ const (
 	keyMetricsPrefix    = "METRICS_PREFIX"
 
 	// default values
+	defaultLogLevel         = "info"
 	defaultRedisHost        = "localhost"
 	defaultRedisPort        = "6379"
 	defaultRedisDb          = "0"
@@ -31,7 +33,7 @@ const (
 	// default values
 	defaultDeploymentId       = "minio"
 	defaultIsActiveTtlSeconds = "600"
-	defualtScaleMetricName    = "bytes_out"
+	defaultScaleMetricName    = "bytes_out"
 	defaultScalePeriodSeconds = "600"
 	defaultTargetValue        = "10"
 )

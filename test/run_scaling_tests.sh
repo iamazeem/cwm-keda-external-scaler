@@ -41,13 +41,15 @@ $KUBECTL version
 echo
 echo "Set up keda"
 $KUBECTL apply -f $KEDA_DEPLOYMENT
-sleep 1m
 
 KEDA_NAMESPACE="keda"
-KEDA_PODS=("keda-operator" "keda-metrics-apiserver")
-for pod in "${KEDA_PODS[@]}"; do
-    echo "Waiting for pod/$pod to be ready"
-    $KUBECTL wait --for=condition=ready --timeout=1200s pod -l app="$pod" -n $KEDA_NAMESPACE
+KEDA_DEPLOYMENTS=("keda-operator" "keda-metrics-apiserver")
+for deployment in "${KEDA_DEPLOYMENTS[@]}"; do
+    echo "Waiting for deployment/$deployment to be ready"
+    if ! $KUBECTL -n $KEDA_NAMESPACE rollout status --timeout=3m deployment/$deployment; then
+      $KUBECTL -n $KEDA_NAMESPACE get pods
+      exit 1
+    fi
 done
 
 echo "SUCCESS: keda is ready!"
@@ -65,9 +67,9 @@ $KUBECTL apply -f $TEST_DEPLOYMENT
 sleep 1m
 echo "Listing all in namespace [$NAMESPACE]"
 $KUBECTL get all -n $NAMESPACE
-POD_NAME_SCALER=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE)
-echo "Waiting for pod/$POD_NAME_SCALER to be ready"
-$KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_SCALER" -n $NAMESPACE
+echo "Waiting for test deployments to be ready"
+$KUBECTL -n $NAMESPACE rollout status --timeout=5m deployment/cwm-keda-external-scaler
+$KUBECTL -n $NAMESPACE rollout status --timeout=5m deployment/test-app1
 echo
 echo "Waiting for HPA to be ready [No. of tries: 5]"
 HPA_STATUS="down"
@@ -82,7 +84,7 @@ for i in {1..5}; do
     sleep 1m
 done
 
-if [[ "${HPA_STATUS}" == "down" ]]; then
+if [[ $HPA_STATUS == "down" ]]; then
     echo
     echo -e "ERROR: HPA is down!"
     echo
@@ -90,21 +92,21 @@ if [[ "${HPA_STATUS}" == "down" ]]; then
     exit 1
 fi
 
-echo "SUCCESS: scaler [$POD_NAME_SCALER] is ready"
+echo "SUCCESS: scaler is ready"
 
 # Ping Redis server
 echo
 echo "Pinging Redis server [No. of tries: 5]"
 REDIS_STATUS="down"
 for i in {1..5}; do
-    if $KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli PING; then
+    if $KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli PING; then
         REDIS_STATUS="up"
         break
     fi
     sleep 10s
 done
 
-if [[ "${REDIS_STATUS}" == "down" ]]; then
+if [[ $REDIS_STATUS == "down" ]]; then
     echo
     echo "ERROR: Redis server is down!"
     echo
@@ -118,9 +120,9 @@ fi
 echo
 echo "TEST # 1: Zero-to-one scaling [0-to-1]"
 echo "Setting $METRIC_KEY_1 in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY_1" "10"
+$KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli SET "$METRIC_KEY_1" "10"
 echo "Setting $LAST_ACTION_KEY_1 in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
+$KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
 sleep 30s
 echo "Listing all in namespace [$NAMESPACE]"
 $KUBECTL get all -n $NAMESPACE
@@ -139,9 +141,9 @@ sed -i "s#scaleMetricName: \"$METRIC_NAME_1\"#scaleMetricName: \"$METRIC_NAME_1_
 $KUBECTL apply -f $TEST_DEPLOYMENT
 sleep 30s
 echo "Setting $METRIC_KEY_1_NEW in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY_1_NEW" "10"
+$KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli SET "$METRIC_KEY_1_NEW" "10"
 echo "Setting $LAST_ACTION_KEY_1 in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
+$KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
 sleep 30s
 echo "Listing all in namespace [$NAMESPACE]"
 $KUBECTL get all -n $NAMESPACE
@@ -168,9 +170,9 @@ echo "SUCCESS: Test (reploy with different scaleMetricName) completed successful
 echo
 echo "TEST # 3: Multiple pods scaling [1-to-4]"
 echo "Setting $METRIC_KEY_1 in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$METRIC_KEY_1" "50"
+$KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli SET "$METRIC_KEY_1" "50"
 echo "Setting $LAST_ACTION_KEY_1 in Redis server"
-$KUBECTL exec -n $NAMESPACE "$POD_NAME_SCALER" -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
+$KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
 sleep 1m
 echo "Listing all in namespace [$NAMESPACE]"
 $KUBECTL get all -n $NAMESPACE
@@ -205,6 +207,10 @@ if (( POD_COUNT != EXPECTED_POD_COUNT )); then
 fi
 
 echo "SUCCESS: Test (1-to-4 scaling) completed successfully!"
+
+echo "--- [LOGS] ---"
+$KUBECTL logs -n $NAMESPACE deployment/cwm-keda-external-scaler cwm-keda-external-scaler
+echo "--------------"
 
 # --- TESTS - END ---
 
