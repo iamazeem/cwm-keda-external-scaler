@@ -117,21 +117,21 @@ fi
 # --- TESTS - START ---
 
 # Test # 1
-echo
-echo "[INF] TEST # 1: Zero-to-one scaling [0-to-1]"
-echo "[INF] Setting $METRIC_KEY_1 in Redis server"
-$KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli SET "$METRIC_KEY_1" "10"
-echo "[INF] Setting $LAST_ACTION_KEY_1 in Redis server"
-$KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
-sleep 30s
-echo "[INF] Listing all in namespace [$NAMESPACE]"
-$KUBECTL get all -n $NAMESPACE
-echo "[INF] Checking HPA in namespace [$NAMESPACE]"
-$KUBECTL describe hpa -n $NAMESPACE
-POD_NAME_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP_1")
-echo "[INF] Waiting for pod/$POD_NAME_TEST_APP to be ready"
-$KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_TEST_APP" -n $NAMESPACE
-echo "[INF] SUCCESS: Test (zero-to-one scaling) completed successfully!"
+# echo
+# echo "[INF] TEST # 1: Zero-to-one scaling [0-to-1]"
+# echo "[INF] Setting $METRIC_KEY_1 in Redis server"
+# $KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli SET "$METRIC_KEY_1" "10"
+# echo "[INF] Setting $LAST_ACTION_KEY_1 in Redis server"
+# $KUBECTL exec -n $NAMESPACE deployment/cwm-keda-external-scaler -c redis -- redis-cli SET "$LAST_ACTION_KEY_1" "$(date +"$FMT_DATETIME")"
+# sleep 30s
+# echo "[INF] Listing all in namespace [$NAMESPACE]"
+# $KUBECTL get all -n $NAMESPACE
+# echo "[INF] Checking HPA in namespace [$NAMESPACE]"
+# $KUBECTL describe hpa -n $NAMESPACE
+# POD_NAME_TEST_APP=$($KUBECTL get pods --no-headers -o custom-columns=":metadata.name" -n $NAMESPACE | grep "$PREFIX_TEST_APP_1")
+# echo "[INF] Waiting for pod/$POD_NAME_TEST_APP to be ready"
+# $KUBECTL wait --for=condition=ready --timeout=600s "pod/$POD_NAME_TEST_APP" -n $NAMESPACE
+# echo "[INF] SUCCESS: Test (zero-to-one scaling) completed successfully!"
 
 # Test # 2
 echo

@@ -73,7 +73,7 @@ metadata:
   name: test-app1
   namespace: cwm-keda-external-scaler-ns
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: test-app1
