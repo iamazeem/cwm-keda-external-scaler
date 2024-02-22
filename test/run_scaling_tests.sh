@@ -4,7 +4,7 @@ set -e
 
 echo "Running scaling tests..."
 
-KEDA_DEPLOYMENT="https://github.com/kedacore/keda/releases/download/v2.1.0/keda-2.1.0.yaml"
+KEDA_DEPLOYMENT="https://github.com/kedacore/keda/releases/download/v2.10.1/keda-2.10.1.yaml"
 
 IMAGE_NAME="cwm-keda-external-scaler:latest"
 TEST_DEPLOYMENT="./test/deploy.yaml"
